@@ -1,0 +1,204 @@
+{
+  "type": "AdaptiveCard",
+  "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+  "version": "1.5",
+  "body": [
+    {
+      "type": "Container",
+      "style": "emphasis",
+      "bleed": true,
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "Image",
+                  "url": "https://examia.navahue.workers.dev/icon-96.png",
+                  "width": "28px",
+                  "height": "28px",
+                  "style": "person"
+                }
+              ],
+              "verticalContentAlignment": "Center"
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "EXAMIA — UPCOMING EXAMS",
+                  "size": "Small",
+                  "weight": "Bolder",
+                  "color": "Accent",
+                  "spacing": "None"
+                }
+              ],
+              "verticalContentAlignment": "Center"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "TextBlock",
+          "text": "Next Exam",
+          "size": "Small",
+          "weight": "Bolder",
+          "isSubtle": true,
+          "spacing": "None"
+        },
+        {
+          "type": "TextBlock",
+          "text": "${nextExamSubject}",
+          "size": "Large",
+          "weight": "Bolder",
+          "spacing": "Small",
+          "wrap": true
+        },
+        {
+          "type": "ColumnSet",
+          "spacing": "Small",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "auto",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "📅",
+                  "size": "Small",
+                  "spacing": "None"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "${nextExamDate}",
+                  "size": "Small",
+                  "isSubtle": true,
+                  "spacing": "None",
+                  "wrap": true
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "TextBlock",
+          "text": "${nextExamCountdown}",
+          "size": "ExtraLarge",
+          "weight": "Bolder",
+          "color": "Accent",
+          "horizontalAlignment": "Center",
+          "spacing": "Medium"
+        },
+        {
+          "type": "TextBlock",
+          "text": "days remaining",
+          "size": "Small",
+          "isSubtle": true,
+          "horizontalAlignment": "Center",
+          "spacing": "None"
+        }
+      ]
+    },
+    {
+      "type": "Container",
+      "separator": true,
+      "spacing": "Medium",
+      "items": [
+        {
+          "type": "ColumnSet",
+          "columns": [
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "📚 Total Exams",
+                  "size": "Small",
+                  "isSubtle": true,
+                  "spacing": "None"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${totalExams}",
+                  "size": "Medium",
+                  "weight": "Bolder",
+                  "spacing": "None"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "✅ Completed",
+                  "size": "Small",
+                  "isSubtle": true,
+                  "spacing": "None"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${completedExams}",
+                  "size": "Medium",
+                  "weight": "Bolder",
+                  "spacing": "None"
+                }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                {
+                  "type": "TextBlock",
+                  "text": "⏳ Upcoming",
+                  "size": "Small",
+                  "isSubtle": true,
+                  "spacing": "None"
+                },
+                {
+                  "type": "TextBlock",
+                  "text": "${upcomingExams}",
+                  "size": "Medium",
+                  "weight": "Bolder",
+                  "spacing": "None"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "actions": [
+    {
+      "type": "Action.Execute",
+      "title": "📋 View Planner",
+      "verb": "open-planner",
+      "style": "positive"
+    },
+    {
+      "type": "Action.Execute",
+      "title": "➕ Add Exam",
+      "verb": "add-exam"
+    }
+  ]
+}

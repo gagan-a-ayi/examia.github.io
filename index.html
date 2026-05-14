@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="favicon.png">
+  <meta name="theme-color" content="#5BA4CF">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png" />
+  <link rel="shortcut icon" href="favicon.ico" />
+  <title>Examia — Ace Your Exams</title>
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Fonts: Outfit + Nunito -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
+  <!-- Font Awesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+
+  <!-- PWA: Apple touch icon -->
+  <link rel="apple-touch-icon" href="icon-192.png" />
+  <!-- PWA: Apple meta tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Examia" />
+  <!-- PWA: iOS splash screens -->
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 414px) and (device-height: 736px) and (-webkit-device-pixel-ratio: 3) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 1024px) and (device-height: 1366px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash.png" />
+  <link rel="apple-touch-startup-image" media="screen and (device-width: 768px) and (device-height: 1024px) and (-webkit-device-pixel-ratio: 2) and (orientation: portrait)" href="splash.png" />
+</head>
+<body>
+
+  <!-- ===== APP SPLASH SCREEN ===== -->
+<div id="appSplash" class="app-splash">
+  <div class="splash-content">
+    <div class="splash-logo">
+      <i class="fa-solid fa-user-graduate"></i>
+    </div>
+
+    <h1 class="splash-title">Examia</h1>
+    <p class="splash-tagline">Ace Your Exams</p>
+
+    <div class="splash-loader">
+      <span></span>
+      <span></span>
+      <span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== TOAST ===== -->
+<div id="toast" class="toast" aria-live="polite"></div>
+
+<!-- ===== SIDEBAR ===== -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <span class="brand-icon"><i class="fa-solid fa-user-graduate"></i></span>
+    <div class="brand-info">
+      <span class="brand-name">Examia</span>
+      <div class="brand-clock">
+        <span id="sidebarTime"></span>
+        <span class="brand-clock-sep">&#183;</span>
+        <span id="sidebarDay"></span>
+        <span class="brand-clock-sep">&#183;</span>
+        <span id="sidebarDate"></span>
+      </div>
+    </div>
+  </div>
+  <ul class="nav-links">
+    <li><button class="nav-btn active" data-section="dashboard">
+      <i class="fa-solid fa-gauge-high nav-icon"></i><span>Dashboard</span>
+    </button></li>
+    <li><button class="nav-btn" data-section="planner">
+      <i class="fa-solid fa-calendar-days nav-icon"></i><span>Exam Planner</span>
+    </button></li>
+    <li><button class="nav-btn" data-section="tracker">
+      <i class="fa-solid fa-chart-line nav-icon"></i><span>Study Tracker</span>
+    </button></li>
+    <li><button class="nav-btn" data-section="pomodoro">
+      <i class="fa-solid fa-clock nav-icon"></i><span>Pomodoro</span>
+    </button></li>
+    <li><button class="nav-btn" data-section="motivation">
+      <i class="fa-solid fa-lightbulb nav-icon"></i><span>Motivation</span>
+    </button></li>
+  </ul>
+  <div class="sidebar-footer">
+    <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
+      <i class="fa-solid fa-moon" id="themeIcon"></i>
+    </button>
+    <div class="streak-badge">
+      <i class="fa-solid fa-fire"></i>
+      <span id="streakCount">0</span>
+    </div>
+  </div>
+  <div class="sidebar-credit">
+      © 2026 • Developed by - NavaHue
+  </div>
+</nav>
+
+<!-- ===== MOBILE HEADER ===== -->
+<header class="mobile-header">
+  <button class="hamburger" id="hamburger"><i class="fa-solid fa-bars"></i></button>
+  <div class="mobile-brand-wrap">
+    <span class="mobile-brand"><i class="fa-solid fa-user-graduate"></i> Examia</span>
+    <div class="mobile-clock">
+      <span id="mobileTime"></span>
+      <span class="brand-clock-sep">&#183;</span>
+      <span id="mobileDay"></span>
+      <span class="brand-clock-sep">&#183;</span>
+      <span id="mobileDate"></span>
+    </div>
+  </div>
+  <button class="theme-toggle-mobile" id="themeToggleMobile"><i class="fa-solid fa-moon" id="themeIconMobile"></i></button>
+</header>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- ===== MAIN ===== -->
+<main class="main-content">
+
+  <!-- ========== DASHBOARD ========== -->
+  <section id="dashboard" class="section active">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">Dashboard</h1>
+        <p class="section-sub" id="dashGreeting">Let's crush it today!</p>
+      </div>
+    </div>
+
+    <div class="stats-grid">
+      <div class="stat-card accent-coral">
+        <div class="stat-icon-wrap coral"><i class="fa-solid fa-layer-group"></i></div>
+        <div class="stat-num" id="statTotal">0</div>
+        <div class="stat-label">Total Exams</div>
+      </div>
+      <div class="stat-card accent-mint">
+        <div class="stat-icon-wrap mint"><i class="fa-solid fa-hourglass-half"></i></div>
+        <div class="stat-num" id="statUpcoming">0</div>
+        <div class="stat-label">Upcoming</div>
+      </div>
+      <div class="stat-card accent-sky">
+        <div class="stat-icon-wrap sky"><i class="fa-solid fa-circle-check"></i></div>
+        <div class="stat-num" id="statCompleted">0</div>
+        <div class="stat-label">Completed</div>
+      </div>
+      <div class="stat-card accent-gold">
+        <div class="stat-icon-wrap gold"><i class="fa-solid fa-fire-flame-curved"></i></div>
+        <div class="stat-num" id="statStreak">0</div>
+        <div class="stat-label">Day Streak</div>
+      </div>
+    </div>
+
+    <div class="countdown-card" id="countdownCard">
+      <div class="countdown-left">
+        <div class="countdown-label"><i class="fa-regular fa-calendar-check"></i> Next Exam</div>
+        <div class="countdown-subject" id="countdownSubject">—</div>
+        <div class="countdown-date" id="countdownDate">Add your first exam</div>
+      </div>
+      <div class="countdown-right">
+        <div class="countdown-days" id="countdownDays">—</div>
+        <div class="countdown-unit" id="countdownUnit">days left</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="card-title"><i class="fa-solid fa-chart-bar"></i> Study Progress Overview</h3>
+      <div class="progress-scroll-wrap">
+        <div class="progress-bars" id="progressBars">
+          <p class="empty-msg">Add exams and track progress to see it here.</p>
+        </div>
+        <div class="progress-scroll-btns" id="progressScrollBtns" style="display:none">
+          <button class="progress-scroll-btn" onclick="scrollProgress(-1)" title="Scroll up"><i class="fa-solid fa-chevron-up"></i></button>
+          <button class="progress-scroll-btn" onclick="scrollProgress(1)" title="Scroll down"><i class="fa-solid fa-chevron-down"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="quick-actions">
+      <button class="quick-btn btn-primary" onclick="navigate('planner'); openExamModal()">
+        <i class="fa-solid fa-plus"></i> Add Exam
+      </button>
+      <button class="quick-btn btn-secondary" onclick="navigate('pomodoro')">
+        <i class="fa-solid fa-clock"></i> Start Timer
+      </button>
+    </div>
+  </section>
+
+  <!-- ========== EXAM PLANNER ========== -->
+  <section id="planner" class="section">
+    <div class="section-header">
+      <h1 class="section-title">Exam Planner</h1>
+      <button class="btn-primary btn-sm" onclick="openExamModal()"><i class="fa-solid fa-plus"></i> Add Exam</button>
+    </div>
+
+    <div class="view-toggle">
+      <button class="view-btn active" id="listViewBtn" onclick="setView('list')"><i class="fa-solid fa-list"></i> List</button>
+      <button class="view-btn" id="calViewBtn" onclick="setView('calendar')"><i class="fa-solid fa-calendar"></i> Calendar</button>
+    </div>
+
+    <div id="listView">
+      <div id="examList" class="exam-list">
+        <div class="empty-state">
+          <div class="empty-emoji"><i class="fa-solid fa-inbox fa-2x"></i></div>
+          <p>No exams added yet.<br>Start planning!</p>
+          <button class="btn-primary btn-sm" onclick="openExamModal()"><i class="fa-solid fa-plus"></i> Add First Exam</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="calendarView" style="display:none">
+      <div class="calendar-nav">
+        <button class="cal-nav-btn" onclick="changeMonth(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+        <span id="calMonthLabel" class="cal-month-label"></span>
+        <button class="cal-nav-btn" onclick="changeMonth(1)"><i class="fa-solid fa-chevron-right"></i></button>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+  </section>
+
+  <!-- ========== STUDY TRACKER ========== -->
+  <section id="tracker" class="section">
+    <div class="section-header">
+      <h1 class="section-title">Study Tracker</h1>
+    </div>
+    <div id="trackerList" class="tracker-list">
+      <div class="empty-state">
+        <div class="empty-emoji"><i class="fa-solid fa-folder-open fa-2x"></i></div>
+        <p>No exams to track.<br>Add exams in the Planner first.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== POMODORO ========== -->
+  <section id="pomodoro" class="section">
+    <div class="section-header">
+      <h1 class="section-title">Pomodoro Timer</h1>
+    </div>
+
+    <div class="pomodoro-container">
+
+      <!-- Mode Tabs -->
+      <div class="pomo-mode-tabs">
+        <button class="pomo-tab active" data-mode="focus" onclick="setPomoMode('focus')">
+          <i class="fa-solid fa-bullseye"></i> Focus
+        </button>
+        <button class="pomo-tab" data-mode="short" onclick="setPomoMode('short')">
+          <i class="fa-solid fa-mug-hot"></i> Short Break
+        </button>
+        <button class="pomo-tab" data-mode="long" onclick="setPomoMode('long')">
+          <i class="fa-solid fa-couch"></i> Long Break
+        </button>
+      </div>
+
+      <!-- Context Selector -->
+      <div class="pomo-context-card">
+        <div class="context-label"><i class="fa-solid fa-tag"></i> Studying for</div>
+        <div class="context-dropdown" id="contextDropdown">
+          <button type="button" class="context-dropdown-btn" id="contextDropdownBtn" onclick="toggleContextDropdown()" aria-haspopup="listbox" aria-expanded="false">
+            <span id="contextDropdownLabel">General / Free Study</span>
+            <i class="fa-solid fa-chevron-down"></i>
+          </button>
+          <input type="hidden" id="pomoContext" value="general" />
+          <div class="context-dropdown-menu" id="contextDropdownMenu" role="listbox"></div>
+        </div>
+      </div>
+
+      <!-- Timer Ring -->
+      <div class="pomo-circle-wrap">
+        <svg class="pomo-ring" viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="ringGradFocus" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#5BA4CF"/>
+              <stop offset="100%" stop-color="#90CBE8"/>
+            </linearGradient>
+            <linearGradient id="ringGradShort" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#6BBFB5"/>
+              <stop offset="100%" stop-color="#A8EDEA"/>
+            </linearGradient>
+            <linearGradient id="ringGradLong" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#84B89A"/>
+              <stop offset="100%" stop-color="#B2D8BF"/>
+            </linearGradient>
+            <filter id="glow">
+              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+              <feMerge><feMergeNode in="coloredBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+          <!-- Outer decorative ring -->
+          <circle class="ring-outer" cx="130" cy="130" r="122"/>
+          <!-- Background track -->
+          <circle class="ring-bg" cx="130" cy="130" r="108"/>
+          <!-- Progress arc -->
+          <circle class="ring-progress" id="ringProgress" cx="130" cy="130" r="108"
+            stroke="url(#ringGradFocus)"
+            stroke-dasharray="678.6" stroke-dashoffset="0"
+            filter="url(#glow)"/>
+          <!-- Center dot indicator -->
+          <circle class="ring-dot" id="ringDot" cx="130" cy="22" r="7" fill="#5BA4CF"/>
+        </svg>
+
+        <div class="pomo-time-display">
+          <div class="pomo-mode-icon" id="pomoModeIcon">
+            <i class="fa-solid fa-bullseye"></i>
+          </div>
+          <div class="pomo-time" id="pomoTime">25:00</div>
+          <div class="pomo-status" id="pomoStatus">Ready to focus</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="pomo-controls">
+        <button class="pomo-btn pomo-reset" onclick="resetTimer()" title="Reset">
+          <i class="fa-solid fa-arrow-rotate-left"></i>
+        </button>
+        <button class="pomo-btn pomo-main" id="pomoStartBtn" onclick="toggleTimer()">
+          <i class="fa-solid fa-play" id="pomoPlayIcon"></i>
+          <span id="pomoBtnLabel">Start</span>
+        </button>
+        <button class="pomo-btn pomo-skip" onclick="skipTimer()" title="Skip">
+          <i class="fa-solid fa-forward-step"></i>
+        </button>
+      </div>
+
+      <!-- Session Tracker — single 4-slot row that resets and counts sets -->
+      <div class="pomo-session-tracker">
+        <div class="session-tracker-header">
+          <span class="session-label">
+            <i class="fa-solid fa-fire-flame-curved"></i> Sessions Today
+          </span>
+          <span class="session-total-badge" id="sessionTotalBadge">0 total</span>
+        </div>
+        <!-- 4 slot indicators rendered by JS -->
+        <div class="session-slots" id="sessionSlots"></div>
+        <!-- Sets completed row (hidden until first set done) -->
+        <div class="session-sets-row" id="sessionSetsRow">
+          <i class="fa-solid fa-layer-group"></i>
+          <span id="sessionSetsLabel">0 sets completed</span>
+        </div>
+      </div>
+
+      <!-- Settings -->
+      <div class="pomo-settings card">
+        <h4 class="card-title"><i class="fa-solid fa-sliders"></i> Customize Durations</h4>
+        <div class="settings-row">
+          <label><i class="fa-solid fa-bullseye"></i> Focus (min)</label>
+          <div class="num-input-wrap">
+            <button class="num-btn" onclick="changeNum('focusDur',-1)"><i class="fa-solid fa-minus"></i></button>
+            <input type="number" id="focusDur" value="25" min="1" max="60" onchange="updateDurations()"/>
+            <button class="num-btn" onclick="changeNum('focusDur',1)"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label><i class="fa-solid fa-mug-hot"></i> Short Break (min)</label>
+          <div class="num-input-wrap">
+            <button class="num-btn" onclick="changeNum('shortDur',-1)"><i class="fa-solid fa-minus"></i></button>
+            <input type="number" id="shortDur" value="5" min="1" max="30" onchange="updateDurations()"/>
+            <button class="num-btn" onclick="changeNum('shortDur',1)"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+        <div class="settings-row">
+          <label><i class="fa-solid fa-couch"></i> Long Break (min)</label>
+          <div class="num-input-wrap">
+            <button class="num-btn" onclick="changeNum('longDur',-1)"><i class="fa-solid fa-minus"></i></button>
+            <input type="number" id="longDur" value="15" min="1" max="60" onchange="updateDurations()"/>
+            <button class="num-btn" onclick="changeNum('longDur',1)"><i class="fa-solid fa-plus"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========== MOTIVATION ========== -->
+  <section id="motivation" class="section">
+    <div class="section-header">
+      <h1 class="section-title">Daily Motivation</h1>
+    </div>
+    <div class="quote-hero" id="quoteHero">
+      <div class="quote-marks"><i class="fa-solid fa-quote-left"></i></div>
+      <blockquote class="quote-text" id="quoteText"></blockquote>
+      <cite class="quote-author" id="quoteAuthor"></cite>
+      <button class="btn-primary btn-sm" onclick="newQuote()" style="margin-top:1.5rem">
+        <i class="fa-solid fa-shuffle"></i> New Quote
+      </button>
+    </div>
+    <div class="quote-grid" id="quoteGrid"></div>
+  </section>
+
+</main>
+
+<!-- ========== EXAM MODAL ========== -->
+<div class="modal-overlay" id="examModalOverlay" onclick="closeExamModal()"></div>
+<div class="modal" id="examModal">
+  <div class="modal-header">
+    <h3 id="modalTitle"><i class="fa-solid fa-calendar-plus"></i> Add Exam</h3>
+    <button class="modal-close" onclick="closeExamModal()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="modal-body">
+    <input type="hidden" id="examId"/>
+    <div class="form-group">
+      <label><i class="fa-solid fa-book"></i> Subject Name *</label>
+      <input type="text" id="examSubject" placeholder="e.g. Mathematics" required/>
+    </div>
+    <div class="form-group">
+      <label><i class="fa-solid fa-calendar-day"></i> Exam Date *</label>
+      <input type="date" id="examDate" required/>
+    </div>
+    <div class="form-row time-row">
+      <div class="form-group">
+        <label><i class="fa-solid fa-clock"></i> Start Time *</label>
+        <input type="time" id="examStartTime" required/>
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-clock"></i> End Time *</label>
+        <input type="time" id="examEndTime" required/>
+      </div>
+    </div>
+    <div class="form-group">
+      <label><i class="fa-solid fa-note-sticky"></i> Details / Notes</label>
+      <textarea id="examDetails" placeholder="Chapters covered, exam hall, etc." rows="3"></textarea>
+    </div>
+    <div class="form-group">
+      <label><i class="fa-solid fa-palette"></i> Color Tag</label>
+      <div class="color-picker" id="colorPicker">
+        <span class="color-dot selected" data-color="#FF6B6B" style="background:#FF6B6B"></span>
+        <span class="color-dot" data-color="#4ECDC4" style="background:#4ECDC4"></span>
+        <span class="color-dot" data-color="#45B7D1" style="background:#45B7D1"></span>
+        <span class="color-dot" data-color="#96CEB4" style="background:#96CEB4"></span>
+        <span class="color-dot" data-color="#F7B731" style="background:#F7B731"></span>
+        <span class="color-dot" data-color="#DDA0DD" style="background:#DDA0DD"></span>
+        <span class="color-dot" data-color="#FF8C42" style="background:#FF8C42"></span>
+        <span class="color-dot" data-color="#6C63FF" style="background:#6C63FF"></span>
+      </div>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" onclick="closeExamModal()">Cancel</button>
+    <button class="btn-primary" onclick="saveExam()"><i class="fa-solid fa-floppy-disk"></i> Save Exam</button>
+  </div>
+</div>
+
+<!-- ========== TRACKER MODAL ========== -->
+<div class="modal-overlay" id="trackerModalOverlay" onclick="closeTrackerModal()"></div>
+<div class="modal modal-lg" id="trackerModal">
+  <div class="modal-header">
+    <h3 id="trackerModalTitle">Study Details</h3>
+    <button class="modal-close" onclick="closeTrackerModal()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="modal-body" id="trackerModalBody"></div>
+</div>
+<script src="notifications.js" defer></script>
+<script src="script.js"></script>
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(reg => console.log('[SW] Registered:', reg.scope))
+        .catch(err => console.error('[SW] Registration failed:', err));
+    });
+  }
+</script>
+<script>
+  /* ============================================================
+    APP SPLASH SCREEN
+  ============================================================ */
+  window.addEventListener('load', () => {
+    const splash = document.getElementById('appSplash');
+
+    setTimeout(() => {
+      splash.classList.add('hide');
+
+      setTimeout(() => {
+        splash.remove();
+      }, 700);
+
+    }, 2000);
+  });
+</script>
+</body>
+</html>

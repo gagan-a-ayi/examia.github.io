@@ -36,6 +36,12 @@ const ExamiaNotifications = (() => {
     lastStreakCheck: 'examia_notif_streak_ts',  // ISO date of last streak-check tick
     lastWeeklySent:  'examia_notif_weekly_ts',  // ISO date of last weekly summary
     lastQuoteSent:   'examia_notif_quote_ts',   // ISO date of last quote push
+    onboarded:        'examia_notif_onboarded', // First exam added — onboarding nudge
+    allCompleteSent:  'examia_notif_all_complete_ts', //  Fires once all exams are marked 'completed' AND the end time has passed — congratulatory message on dashboard
+    lastTakeCareNudge: 'examia_tc_nudge_ts',  // Timestamp of last "take care of yourself" nudge (used for both sleep and screen time nudges, which share the same cooldown)
+    lastTcSleepAlert:  'examia_tc_sleep_ts',  // Timestamp of last "take care of your sleep" alert
+    lastTcScreenAlert: 'examia_tc_screen_ts',  // Timestamp of last "take care of your screen time" alert
+    tcStreakSent:      'examia_tc_streak_ts',  // Timestamp of last "keep up the good work" streak nudge (fires after 3+ day break)
   };
 
   /* ── Motivational quotes (mirrored from script.js QUOTES) ── */
@@ -88,6 +94,11 @@ const ExamiaNotifications = (() => {
       '{"focus":25,"short":5,"long":15,"sessions":0,"sessionDate":""}');
   }
 
+  function getTakeCareLog(dateStr) {
+    const all = JSON.parse(localStorage.getItem('examia_takecare') || '{}');
+    return all[dateStr] || null;
+  }
+
   /** Pick a pseudo-random quote different from the previous one */
   let _lastQuoteIdx = -1;
   function pickQuote() {
@@ -95,6 +106,45 @@ const ExamiaNotifications = (() => {
     do { idx = Math.floor(Math.random() * QUOTES.length); } while (idx === _lastQuoteIdx);
     _lastQuoteIdx = idx;
     return QUOTES[idx];
+  }
+
+  /* ── Notification 7: Birthday wish at midnight ───────────── */
+  function checkBirthdayWish() {
+    const profile = JSON.parse(localStorage.getItem('examia_profile') || 'null');
+    if (!profile || !profile.dob) return;
+
+    const now   = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    /* Don't send twice in the same day */
+    if (localStorage.getItem('examia_notif_bday_ts') === today) return;
+
+    const dob    = new Date(profile.dob + 'T00:00:00');
+    const isBday = dob.getMonth() === now.getMonth() && dob.getDate() === now.getDate();
+    if (!isBday) return;
+
+    /* Wait until midnight — but don't block testing:
+      fire any time on the birthday, the daily-key prevents repeats */
+    const age  = now.getFullYear() - dob.getFullYear();
+    const name = profile.displayName || (profile.fullName ? profile.fullName.split(' ')[0] : '');
+    const title = profile.title || 'Mr';
+    const pronoun = title === 'Ms' ? 'her' : 'his';
+
+    localNotify(`🎂 Happy Birthday, ${name}!`, {
+      body:    `Wishing you a wonderful ${age}${ordinal(age)} birthday! May all ${pronoun} dreams come true. 🎉✨`,
+      tag:     'birthday-wish',
+      requireInteraction: true,
+      data:    { url: '/index.html#profile' },
+    });
+
+    localStorage.setItem('examia_notif_bday_ts', today);
+  }
+
+  /* Returns ordinal suffix: 1st, 2nd, 3rd, 4th … */
+  function ordinal(n) {
+    const s = ['th','st','nd','rd'];
+    const v = n % 100;
+    return s[(v - 20) % 10] || s[v] || s[0];
   }
 
   /* ── Core: request permission & register push ────────────── */
@@ -213,6 +263,134 @@ const ExamiaNotifications = (() => {
     }
   }
 
+  /* ── Notification 8: First exam added — onboarding nudge ─── */
+  /*
+   * Fires once, the first time getExams() returns at least one exam.
+   * Guarded by LS.onboarded flag (value: '1').
+   * NOTE: Called from runAllChecks(), so it fires on the next
+   * scheduler tick after the first exam is saved.
+   * For an instant fire on save, also call from script.js — see below.
+   */
+  async function checkOnboarding() {
+    if (localStorage.getItem(LS.onboarded) === '1') return;
+    if (getExams().length === 0) return;
+
+    await localNotify('📚 Exam added! Ready to study?', {
+      body: "Don't forget to set up your Study Tracker to log topics and track your progress.",
+      tag:  'onboarding-nudge',
+      requireInteraction: true,
+      data: { url: '/index.html#tracker' },
+    });
+
+    localStorage.setItem(LS.onboarded, '1');
+  }
+
+  /* ── Notification 9: All exams completed ────────────────────── */
+  /*
+   * Fires once all exams are marked 'completed' AND the end time
+   * of every exam has already passed (i.e. they're genuinely done,
+   * not just pre-marked).
+   * Guarded by LS.allCompleteSent (value: date string of the day it fired).
+   * Resets if new exams are added later (guard key deleted — see script.js).
+   */
+  async function checkAllExamsCompleted() {
+    const exams = getExams();
+    if (exams.length === 0) return;
+    if (localStorage.getItem(LS.allCompleteSent)) return;  // already sent
+
+    const now = new Date();
+
+    const allDone = exams.every(ex => {
+      /* Must be marked completed in the tracker */
+      const tracker = JSON.parse(localStorage.getItem('examia_tracker') || '{}');
+      const status  = (tracker[ex.id] || {}).status;
+      if (status !== 'completed') return false;
+
+      /* End time must have passed */
+      if (!ex.endTime) return false;
+      const endDt = new Date(`${ex.date}T${ex.endTime}:00`);
+      return now >= endDt;
+    });
+
+    if (!allDone) return;
+
+    await localNotify('🎉 All exams done — congratulations!', {
+      body:    "You've completed every exam. Time to relax and celebrate your hard work! 🏆",
+      tag:     'all-exams-complete',
+      requireInteraction: true,
+      data:    { url: '/index.html#dashboard' },
+    });
+
+    localStorage.setItem(LS.allCompleteSent, todayStr());
+  }
+
+
+  async function checkTakeCareNudges() {
+    const today = todayStr();
+    const now   = new Date();
+    const log   = getTakeCareLog(today);
+
+    /* 1. No log by 10 PM */
+    if (!log && now.getHours() >= 22 &&
+        localStorage.getItem(LS.lastTakeCareNudge) !== today) {
+      await localNotify('bestie did you forget to check in 👀 takes 2 mins', {
+        body: 'Log your TakeCare vibe before the day ends 🌿',
+        tag:  'tc-nudge',
+        data: { url: '/index.html#takecare' },
+      });
+      localStorage.setItem(LS.lastTakeCareNudge, today);
+    }
+
+    /* 2. Sleep < 5h */
+    if (log && log.sleep && log.sleep.bedtime && log.sleep.wake &&
+        localStorage.getItem(LS.lastTcSleepAlert) !== today) {
+      let [bh,bm] = log.sleep.bedtime.split(':').map(Number);
+      let [wh,wm] = log.sleep.wake.split(':').map(Number);
+      let mins = (wh*60+wm)-(bh*60+bm); if(mins<0) mins+=1440;
+      const hours = +(mins/60).toFixed(1);
+      if (hours < 5) {
+        await localNotify(`you logged only ${hours}h of sleep. your brain needs fuel 💀`, {
+          body: 'Try to rest more tonight — even an hour helps 💤',
+          tag:  'tc-sleep',
+          data: { url: '/index.html#takecare' },
+        });
+        localStorage.setItem(LS.lastTcSleepAlert, today);
+      }
+    }
+
+    /* 3. Screen > 4h + exam within 3 days */
+    if (log && log.screen && log.screen.total > 4 &&
+        localStorage.getItem(LS.lastTcScreenAlert) !== today) {
+      const hasNearExam = getExams().some(e => { const d = daysUntil(e.date); return d >= 0 && d <= 3; });
+      if (hasNearExam) {
+        await localNotify(`${log.screen.total}h of rot time with exams coming up... okay bestie 😭`, {
+          body: 'Maybe close the app and open the books? just a thought 📚',
+          tag:  'tc-screen',
+          data: { url: '/index.html#takecare' },
+        });
+        localStorage.setItem(LS.lastTcScreenAlert, today);
+      }
+    }
+
+    /* 4. 7-day consecutive logging streak */
+    if (localStorage.getItem(LS.tcStreakSent) !== today) {
+      const all = JSON.parse(localStorage.getItem('examia_takecare') || '{}');
+      let streak = 0;
+      for (let i = 1; i <= 7; i++) {
+        const d = new Date(); d.setDate(d.getDate() - i);
+        if (all[d.toISOString().split('T')[0]]) streak++;
+        else break;
+      }
+      if (streak >= 7) {
+        await localNotify('7 days logged in a row 🔥 you\'re actually built different', {
+          body: 'Consistency is a superpower. keep going 🌿',
+          tag:  'tc-streak',
+        });
+        localStorage.setItem(LS.tcStreakSent, today);
+      }
+    }
+  }
+
   /* ── Notification 1: Exam countdown reminders ────────────── */
   /*
    * Checks all exams and fires a notification if today is exactly
@@ -251,10 +429,16 @@ const ExamiaNotifications = (() => {
 
   /* ── Notification 4: Exam day alert ─────────────────────── */
   /*
-   * Fires at (approximately) 7 AM on the morning of each exam.
-   * We can't schedule future native timers in JS, so on each
-   * periodic tick we check if today is exam day and if the
-   * 7 AM window has passed.
+   * Timeline on exam day (all times approximate ±30 min due to polling):
+   *
+   *   07:00              → "Today is your exam" morning alert
+   *   startTime − 60 min → "All the best" pre-exam wish  (replaces morning alert window)
+   *   startTime          → silence begins (exam in progress)
+   *   endTime            → silence ends
+   *
+   * Guards (all stored in LS.scheduledExams[ex.id]):
+   *   record.dayAlert   — morning alert sent (today's date string)
+   *   record.wishAlert  — pre-exam wish sent (today's date string)
    */
   function checkExamDayAlerts() {
     const exams = getExams();
@@ -263,19 +447,56 @@ const ExamiaNotifications = (() => {
     const today = todayStr();
 
     exams.forEach(async ex => {
-      if (ex.date !== today) return;              // only on exam day
-      if (now.getHours() < 7) return;             // wait until at least 7 AM
+      if (ex.date !== today) return;
+
       const record = sent[ex.id] || {};
-      if (record.dayAlert === today) return;       // already sent today
 
-      await localNotify(`🍀 Today is your ${ex.subject} exam!`, {
-        body:    "Good luck! You've prepared for this — go show what you know.",
-        tag:     `exam-day-${ex.id}`,
-        data:    { url: '/index.html#planner' },
-        requireInteraction: true,
-      });
+      /* Parse startTime / endTime ("HH:MM") into today's Date objects */
+      const startDt = ex.startTime ? new Date(`${today}T${ex.startTime}:00`) : null;
+      const endDt   = ex.endTime   ? new Date(`${today}T${ex.endTime}:00`)   : null;
 
-      record.dayAlert = today;
+      /* ── Silence window: between exam start and exam end ── */
+      if (startDt && endDt && now >= startDt && now < endDt) return;
+
+      /* ── Pre-exam window: within 60 min before startTime ── */
+      const oneHourBefore = startDt ? new Date(startDt.getTime() - 60 * 60 * 1000) : null;
+      const inPreExamWindow = oneHourBefore && now >= oneHourBefore && now < startDt;
+
+      if (inPreExamWindow) {
+        /* Send "All the best" wish once per exam per day */
+        if (record.wishAlert !== today) {
+          const timeLabel = ex.startTime
+            ? new Date(`${today}T${ex.startTime}:00`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+            : 'soon';
+
+          await localNotify(`🌟 All the best for ${ex.subject}!`, {
+            body:    `Your exam starts at ${timeLabel}. You've got this — stay calm and do your best! 💪`,
+            tag:     `exam-wish-${ex.id}`,
+            renotify: true,
+            requireInteraction: true,
+            data:    { url: '/index.html#planner' },
+          });
+
+          record.wishAlert = today;
+        }
+        /* Morning alert is intentionally skipped in this window */
+        sent[ex.id] = record;
+        localStorage.setItem(LS.scheduledExams, JSON.stringify(sent));
+        return;
+      }
+
+      /* ── Morning alert: after 7 AM, and before the pre-exam window ── */
+      if (now.getHours() >= 7 && record.dayAlert !== today) {
+        await localNotify(`🍀 Today is your ${ex.subject} exam!`, {
+          body:    "Good luck! You've prepared for this — go show what you know.",
+          tag:     `exam-day-${ex.id}`,
+          requireInteraction: true,
+          data:    { url: '/index.html#planner' },
+        });
+
+        record.dayAlert = today;
+      }
+
       sent[ex.id] = record;
     });
 
@@ -371,6 +592,10 @@ const ExamiaNotifications = (() => {
     checkStreakReminder();
     checkWeeklySummary();
     checkDailyQuote();
+    checkBirthdayWish();
+    checkOnboarding();
+    checkAllExamsCompleted();
+    checkTakeCareNudges();
   }
 
   /* ── init ────────────────────────────────────────────────── */
@@ -417,7 +642,7 @@ const ExamiaNotifications = (() => {
   }
 
   /* ── Expose public surface ───────────────────────────────── */
-  return { init, onPomoDone };
+  return { init, onPomoDone, checkOnboarding, checkAllExamsCompleted, checkTakeCareNudges };
 
 })();
 

@@ -1,5 +1,5 @@
 /* ============================================================
-   Examia — service-worker.js  v3
+   Examia — service-worker.js  v5
    Strategy:
      • Static assets  → Cache-First  (instant repeat loads)
      • Navigation     → Network-First with cache fallback
@@ -9,17 +9,13 @@
      • Windows 11 PWA Widget handlers
    ============================================================ */
 
-const APP_VERSION   = 'v3';
+const APP_VERSION   = 'v6';
 const STATIC_CACHE  = `examia-static-${APP_VERSION}`;
 const DYNAMIC_CACHE = `examia-dynamic-${APP_VERSION}`;
 
 /* Core app shell — cached on install */
 const STATIC_ASSETS = [
   './',
-  './index.html',
-  './styles.css',
-  './script.js',
-  './notifications.js',
   './manifest.json',
   './favicon.ico',
   './favicon.png',
@@ -29,6 +25,8 @@ const STATIC_ASSETS = [
   './icon-512.png',
   './icon-96.png',
 ];
+
+const SWR_ASSETS = [];
 
 /* CDN origins served stale-while-revalidate */
 const CDN_ORIGINS = [
@@ -65,9 +63,18 @@ self.addEventListener('activate', event => {
 
 
 /* ── FETCH: route-based caching strategies ───────────────── */
+const NEVER_CACHE = ['index.html', 'script.js', 'styles.css', 'notifications.js'];
+
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
+
+  /* 0. Core app files — network-first, cache fallback for offline */
+  const fileName = url.pathname.split('/').pop();
+  if (NEVER_CACHE.some(f => fileName === f) || url.pathname === '/' || url.pathname.endsWith('/')) {
+    event.respondWith(networkFirst(request, STATIC_CACHE));
+    return;
+  }
 
   /* 1. Non-GET requests — always go to network */
   if (request.method !== 'GET') return;
@@ -85,6 +92,14 @@ self.addEventListener('fetch', event => {
   }
 
   /* 4. Static app-shell assets — cache-first */
+  /* 4a. UI assets (CSS etc.) — stale-while-revalidate */
+  const pathname = url.pathname;
+  if (url.origin === self.location.origin &&
+      SWR_ASSETS.some(a => pathname.endsWith(a.replace('./', '/')))) {
+    event.respondWith(staleWhileRevalidate(request, STATIC_CACHE));
+    return;
+  }
+  /* 4b. Other static app-shell assets — cache-first */
   if (url.origin === self.location.origin) {
     event.respondWith(cacheFirst(request, STATIC_CACHE));
     return;
@@ -150,6 +165,10 @@ async function staleWhileRevalidate(request, cacheName) {
  * the background.
  */
 self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    return;
+  }
   if (event.data && event.data.type === 'LOCAL_NOTIFY') {
     const { title, options } = event.data;
     event.waitUntil(
@@ -331,4 +350,121 @@ self.addEventListener('widgetclick', event => {
       return clients.openWindow(url);
     })
   );
+});
+
+
+/* ── PERIODIC BACKGROUND SYNC — offline scheduled notifications ── */
+
+const SCHED_KEY = 'examia_sw_scheduled'; // stored in Cache API (SW has no localStorage)
+
+/** Read scheduled items from CacheStorage (SW cannot access localStorage) */
+async function swGetScheduled() {
+  try {
+    const cache    = await caches.open('examia-sw-data');
+    const response = await cache.match('/__sw_scheduled__');
+    if (!response) return [];
+    return await response.json();
+  } catch { return []; }
+}
+
+/** Write scheduled items to CacheStorage */
+async function swSetScheduled(items) {
+  const cache = await caches.open('examia-sw-data');
+  await cache.put('/__sw_scheduled__',
+    new Response(JSON.stringify(items), { headers: { 'Content-Type': 'application/json' } })
+  );
+}
+
+/**
+ * periodicsync — browser wakes the SW on its own schedule (min ~12h on most
+ * Chrome versions for the generic tag; timetable alarms use stored timestamps).
+ */
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'examia-daily-check') {
+    event.waitUntil(runDailyChecks());
+  }
+  if (event.tag === 'examia-alarms') {
+    event.waitUntil(fireOverdueAlarms());
+  }
+  // Widget tags handled above (already in your SW)
+});
+
+/** Check and fire any scheduled alarms whose time has passed */
+async function fireOverdueAlarms() {
+  const now   = Date.now();
+  const items = await swGetScheduled();
+  const remaining = [];
+
+  for (const item of items) {
+    if (item.fireAt <= now) {
+      await self.registration.showNotification(item.title, {
+        body:    item.body,
+        icon:    './icon-192.png',
+        badge:   './icon-512.png',
+        vibrate: [200, 100, 200],
+        tag:     item.tag,
+        data:    { url: item.url || '/index.html#timetable' },
+      });
+    } else {
+      remaining.push(item); // keep future alarms
+    }
+  }
+
+  await swSetScheduled(remaining);
+}
+
+/** Daily checks: exam countdowns, streak reminder, quote */
+async function runDailyChecks() {
+  const now  = new Date();
+  const hour = now.getHours();
+
+  // Quote of the day — fires if between 05:00 and 06:00
+  if (hour === 5) {
+    await self.registration.showNotification('💡 Start your day right', {
+      body:  'Open Examia for today\'s motivational quote.',
+      icon:  './icon-192.png',
+      badge: './icon-512.png',
+      tag:   'daily-quote-bg',
+      data:  { url: '/index.html#motivation' },
+    });
+  }
+
+  // Streak reminder — fires at 20:00 if no session logged (best-effort; SW has no LS access)
+  if (hour === 20) {
+    await self.registration.showNotification('🔥 Keep your streak alive', {
+      body:  'Don\'t forget to log a study session today!',
+      icon:  './icon-192.png',
+      badge: './icon-512.png',
+      tag:   'streak-reminder-bg',
+      data:  { url: '/index.html#pomodoro' },
+    });
+  }
+}
+
+/** Called from the page: accepts a message to persist an alarm into CacheStorage */
+self.addEventListener('message', event => {
+  if (event.data && event.data.type === 'SKIP_WAITING') { self.skipWaiting(); return; }
+  if (event.data && event.data.type === 'LOCAL_NOTIFY') {  // existing handler — keep it
+    const { title, options } = event.data;
+    event.waitUntil(self.registration.showNotification(title, options || {}));
+    return;
+  }
+  if (event.data && event.data.type === 'SCHEDULE_ALARM') {
+    // Persist a future alarm so SW can fire it even when app is closed
+    event.waitUntil((async () => {
+      const items = await swGetScheduled();
+      // Remove any existing alarm with same tag
+      const filtered = items.filter(i => i.tag !== event.data.alarm.tag);
+      filtered.push(event.data.alarm);
+      await swSetScheduled(filtered);
+    })());
+    return;
+  }
+  if (event.data && event.data.type === 'CANCEL_ALARM') {
+    event.waitUntil((async () => {
+      const items    = await swGetScheduled();
+      const filtered = items.filter(i => i.tag !== event.data.tag);
+      await swSetScheduled(filtered);
+    })());
+  }
 });

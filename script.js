@@ -38,6 +38,16 @@ const Store = {
 
   getTheme()            { return localStorage.getItem('examia_theme') || 'light'; },
   saveTheme(v)          { localStorage.setItem('examia_theme', v); },
+
+  getDocuments()       { return JSON.parse(localStorage.getItem('examia_documents') || '[]'); },
+  saveDocuments(v)     { localStorage.setItem('examia_documents', JSON.stringify(v)); },
+
+  getTodos()       { return JSON.parse(localStorage.getItem('examia_todos') || '[]'); },
+  saveTodos(v)     { localStorage.setItem('examia_todos', JSON.stringify(v)); },
+
+  getTakeCare()    { return JSON.parse(localStorage.getItem('examia_takecare') || '{}'); },
+  saveTakeCare(v)  { localStorage.setItem('examia_takecare', JSON.stringify(v)); },
+
 };
 
 
@@ -196,15 +206,54 @@ const AudioFX = {
 function playSound(kind) {
   AudioFX.ensure();
   const bank = {
+    // Planner
     examAdded:   () => AudioFX.sequence([[523.25,0.12,'sine',0.05],[659.25,0.14,'sine',0.05],[783.99,0.16,'sine',0.05]]),
     examDeleted: () => AudioFX.sequence([[392,0.14,'triangle',0.05],[311.13,0.14,'triangle',0.05],[261.63,0.18,'triangle',0.05]]),
+    examUpdated:    () => AudioFX.sequence([[523.25,0.09,'sine',0.04],[587.33,0.09,'sine',0.04],[659.25,0.13,'sine',0.05]]),
+
+    // Tracker
+    topicAdded:     () => AudioFX.beep(659.25,0.09,'sine',0.04),
+    topicRemoved:   () => AudioFX.beep(392,0.09,'triangle',0.04),
+    statusChanged:  () => AudioFX.sequence([[440,0.08,'square',0.03],[493.88,0.10,'square',0.03]]),
     topicDone:   () => AudioFX.sequence([[659.25,0.08,'sine',0.04],[783.99,0.08,'sine',0.05],[987.77,0.12,'sine',0.05]]),
     examComplete:() => AudioFX.sequence([[440,0.11,'sine',0.05],[554.37,0.11,'sine',0.05],[659.25,0.18,'sine',0.06]]),
+    
+    // Pomodoro
     pomoStart:   () => AudioFX.beep(523.25,0.08,'sine',0.035),
     pomoPause:   () => AudioFX.beep(330,0.1,'triangle',0.04),
     pomoReset:   () => AudioFX.sequence([[392,0.07,'square',0.03],[329.63,0.07,'square',0.03]]),
     pomoSkip:    () => AudioFX.sequence([[659.25,0.07,'sine',0.04],[493.88,0.07,'sine',0.04]]),
-    pomoDone:    () => AudioFX.sequence([[587.33,0.10,'sine',0.05],[739.99,0.10,'sine',0.05],[880,0.14,'sine',0.06]])
+    pomoDone:    () => AudioFX.sequence([[587.33,0.10,'sine',0.05],[739.99,0.10,'sine',0.05],[880,0.14,'sine',0.06]]),
+    
+    // To-Do List
+    todoAdded:   () => AudioFX.sequence([[523.25,0.10,'sine',0.04],[659.25,0.12,'sine',0.04],[783.99,0.14,'sine',0.05]]),
+    todoDone:    () => AudioFX.sequence([[783.99,0.10,'sine',0.05],[987.77,0.12,'sine',0.05],[1174.66,0.16,'sine',0.06]]),
+    todoDeleted: () => AudioFX.sequence([[392,0.12,'triangle',0.04],[311.13,0.12,'triangle',0.04],[261.63,0.16,'triangle',0.04]]),
+    todoReminder:() => AudioFX.sequence([[440,0.10,'sine',0.04],[440,0.10,'sine',0.04],[554.37,0.18,'sine',0.05]]),
+    todoAllDone: () => AudioFX.sequence([[523.25,0.10,'sine',0.05],[659.25,0.10,'sine',0.05],[783.99,0.10,'sine',0.05],[1046.50,0.20,'sine',0.06]]),
+
+    // TakeCare
+    tcVibeSaved:    () => AudioFX.sequence([[523.25,0.09,'sine',0.04],[659.25,0.09,'sine',0.04],[783.99,0.09,'sine',0.04],[1046.50,0.16,'sine',0.06]]),
+    //tcCardOpen:     () => AudioFX.beep(493.88,0.06,'sine',0.03),
+    tcCardClose:    () => AudioFX.beep(392,0.06,'triangle',0.025),
+    tcPillSelect:   () => AudioFX.beep(587.33,0.05,'sine',0.025),
+    tcEmojiSelect:  () => AudioFX.beep(659.25,0.07,'sine',0.03),
+    tcMealToggleOn: () => AudioFX.beep(783.99,0.06,'sine',0.03),
+    tcMealToggleOff:() => AudioFX.beep(493.88,0.06,'triangle',0.025),
+    tcWaterFill:    () => AudioFX.beep(880,0.05,'sine',0.025),
+    tcWaterEmpty:   () => AudioFX.beep(440,0.05,'triangle',0.025),
+    tcSliderMove:   () => AudioFX.beep(523.25,0.04,'sine',0.02),
+    tcDateNav:      () => AudioFX.beep(440,0.06,'triangle',0.03),
+    tcActivitySelect: () => AudioFX.beep(698.46,0.07,'sine',0.03),
+    
+    // Documents
+    docUploaded:    () => AudioFX.sequence([[587.33,0.09,'sine',0.04],[739.99,0.11,'sine',0.05]]),
+    docDeleted:     () => AudioFX.sequence([[370,0.10,'triangle',0.04],[311.13,0.12,'triangle',0.04]]),
+    docTypeSet:     () => AudioFX.beep(493.88,0.07,'sine',0.03),
+
+    // Profile
+    profileSaved:   () => AudioFX.sequence([[523.25,0.09,'sine',0.04],[659.25,0.13,'sine',0.05]]),
+    profileCleared: () => AudioFX.sequence([[392,0.10,'triangle',0.04],[329.63,0.12,'triangle',0.04]]),
   };
   if (bank[kind]) bank[kind]();
 }
@@ -237,6 +286,10 @@ function navigate(sec) {
   if (sec === 'tracker')   renderTracker();
   if (sec === 'pomodoro')  populateContextExams();
   if (sec === 'motivation')    renderQuotes();
+  if (sec === 'todo') renderTodo();
+  if (sec === 'takecare')  renderTakeCare();
+  if (sec === 'documents') renderDocuments();
+  if (sec === 'profile')   renderProfile();
   closeSidebar();
 }
 
@@ -245,8 +298,8 @@ document.querySelectorAll('.nav-btn').forEach(b =>
 
 
 /* ============================================================
-   § 4  MOBILE SIDEBAR
-   ============================================================ */
+  § 4  MOBILE SIDEBAR
+  ============================================================ */
 function openSidebar()  {
   document.getElementById('sidebar').classList.add('open');
   document.getElementById('sidebarOverlay').classList.add('active');
@@ -260,8 +313,8 @@ document.getElementById('sidebarOverlay').addEventListener('click', closeSidebar
 
 
 /* ============================================================
-   § 5  THEME
-   ============================================================ */
+§ 5  THEME
+============================================================ */
 function setTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   Store.saveTheme(theme);
@@ -493,14 +546,20 @@ function saveExam() {
       changed = true;
     }
     showToast(changed ? '<i class="fa-solid fa-check"></i> Exam updated!' : '<i class="fa-solid fa-triangle-exclamation"></i> Exam not found', changed ? 'success' : 'error');
+    if (changed) playSound('examUpdated');
   } else {
     const newExam = { id: uid(), subject, date, startTime, endTime, details, color: selectedColor, createdAt: Date.now() };
     exams.push(newExam);
     showToast('<i class="fa-solid fa-check"></i> Exam added!', 'success');
     playSound('examAdded');
+    localStorage.removeItem('examia_notif_all_complete_ts');
   }
   Store.saveExams(exams);
+  /* Onboarding nudge — fires instantly on first exam save */
+  if (typeof ExamiaNotifications !== 'undefined')
+    ExamiaNotifications.checkOnboarding()
   closeExamModal();
+
   renderExamList();
   if (currentSection === 'dashboard') renderDashboard();
   populateContextExams();
@@ -804,7 +863,12 @@ function cycleStatus(id) {
     if (card) card.outerHTML = buildTrackerCard(ex);
   }
   updateStreak();
-  if (t.status === 'completed') playSound('examComplete');
+  if (t.status === 'completed') {
+    playSound('examComplete');
+    if (typeof ExamiaNotifications !== 'undefined')
+      ExamiaNotifications.checkAllExamsCompleted();         
+  }
+  if (t.status !== 'completed') playSound('statusChanged');
   showToast(`<i class="fa-solid fa-check"></i> Status: ${STATUS_LABELS[t.status]}`, 'success');
 }
 
@@ -865,6 +929,7 @@ function removeTopic(ev, id, idx) {
   t.topics.splice(idx, 1);
   Store.saveTracker(id, t);
   refreshTopics(id);
+  playSound('topicRemoved');
   updateManualProgress(id, t.manualProgress || 0);
 }
 
@@ -1377,19 +1442,23 @@ function init() {
 
 document.addEventListener('DOMContentLoaded', () => {
   init();
+  tcBuildTimeSelects();
+  renderDocuments();
+  renderTodo();
+  scheduleTodoReminders();
   const hash = window.location.hash.replace('#', '');
-  const valid = ['dashboard', 'planner', 'tracker', 'pomodoro', 'motivation'];
+  const valid = ['dashboard', 'planner', 'tracker', 'pomodoro', 'motivation', 'todo', 'takecare', 'documents', 'notepad', 'timetable', 'profile'];
   if (valid.includes(hash)) navigate(hash);
 });
 
 window.addEventListener('hashchange', () => {
   const hash = window.location.hash.replace('#', '');
-  const valid = ['dashboard', 'planner', 'tracker', 'pomodoro', 'motivation'];
+  const valid = ['dashboard', 'planner', 'tracker', 'pomodoro', 'motivation', 'todo', 'takecare', 'documents', 'notepad', 'timetable', 'profile'];
   if (valid.includes(hash)) navigate(hash);
 });
 
 document.addEventListener('keydown', e => {
-  if (e.key === 'Escape') { closeExamModal(); closeTrackerModal(); closeSidebar(); }
+  if (e.key === 'Escape') { closeExamModal(); closeTrackerModal(); closeSidebar(); closeTodoModal(); tcCloseAllCards(); closeDeleteDocModal(); closeDocPreview(); closeProfileClearModal(); }
 });
 
 document.addEventListener('visibilitychange', () => {
@@ -1409,4 +1478,1716 @@ if ('serviceWorker' in navigator) {
       })
       .catch(err => console.error('[SW] Registration failed:', err));
   });
+}
+
+
+
+
+/* ============================================================
+   § 13  PROFILE
+   ============================================================ */
+
+const ProfileStore = {
+  get() {
+    return JSON.parse(localStorage.getItem('examia_profile') || 'null') || {
+      title: 'Mr', fullName: '', displayName: '', dob: '', course: '', avatarDataUrl: ''
+    };
+  },
+  save(v) { localStorage.setItem('examia_profile', JSON.stringify(v)); },
+};
+
+let _selectedTitle = 'Mr';
+
+function genderFromTitle(t) { return t === 'Mr' ? 'Male' : 'Female'; }
+function genderIcon(t) {
+  return t === 'Mr'
+    ? '<i class="fa-solid fa-mars"></i>'
+    : '<i class="fa-solid fa-venus"></i>';
+}
+
+/* Auto-fill display name with first word of full name */
+function syncDisplayName() {
+  const full = document.getElementById('profileFullName').value.trim();
+  const disp = document.getElementById('profileDisplayName');
+  if (!disp.dataset.edited) disp.value = full.split(/\s+/)[0] || '';
+  renderProfileHero();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const d = document.getElementById('profileDisplayName');
+  if (d) d.addEventListener('input', () => { d.dataset.edited = 'yes'; renderProfileHero(); });
+  document.getElementById('profileCourse')?.addEventListener('input', renderProfileHero);
+  updateSidebarDisplayName();
+});
+
+/* Title toggle */
+function selectTitle(t) {
+  _selectedTitle = t;
+  document.querySelectorAll('.profile-title-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.title === t));
+  renderProfileHero();
+}
+
+/* Age calculation */
+function calcAge(dobStr) {
+  if (!dobStr) return null;
+  const dob = new Date(dobStr + 'T00:00:00');
+  const today = new Date();
+  let age = today.getFullYear() - dob.getFullYear();
+  const m = today.getMonth() - dob.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
+  return age >= 0 ? age : null;
+}
+
+/* Birthday hint text */
+function dobSubtext(dobStr) {
+  if (!dobStr) return null;
+  const dob   = new Date(dobStr + 'T00:00:00');
+  const today = new Date();
+  const bday  = new Date(today.getFullYear(), dob.getMonth(), dob.getDate());
+  if (bday < today) bday.setFullYear(bday.getFullYear() + 1);
+  const diff = Math.ceil((bday - today) / 86400000);
+  const age  = calcAge(dobStr);
+  if (diff === 0) return `🎂 Happy Birthday! You turn ${age + 1} today!`;
+  if (diff <= 7)  return `🎉 Birthday in ${diff} day${diff > 1 ? 's' : ''}!`;
+  return age !== null ? `${age} years old` : null;
+}
+
+/* Avatar upload */
+function handleAvatarUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    showToast('<i class="fa-solid fa-triangle-exclamation"></i> Image too large (max 2 MB)', 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    applyAvatar(e.target.result);
+    const p = ProfileStore.get();
+    p.avatarDataUrl = e.target.result;
+    ProfileStore.save(p);
+    showToast('<i class="fa-solid fa-check"></i> Photo updated!', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function applyAvatar(dataUrl) {
+  const img  = document.getElementById('profileAvatarImg');
+  const icon = document.getElementById('profileAvatarPlaceholder');
+  if (dataUrl) {
+    img.src = dataUrl;
+    img.style.display = 'block';
+    icon.style.display = 'none';
+  } else {
+    img.style.display = 'none';
+    icon.style.display = 'block';
+  }
+}
+
+/* Live hero preview */
+function renderProfileHero() {
+  const fullName    = (document.getElementById('profileFullName')?.value   || '').trim();
+  const displayName = (document.getElementById('profileDisplayName')?.value || '').trim();
+  const course      = (document.getElementById('profileCourse')?.value     || '').trim();
+  const dob         = document.getElementById('profileDOB')?.value || '';
+
+  document.getElementById('profileHeroName').textContent =
+    fullName ? `${_selectedTitle}. ${fullName}` : '—';
+
+  const badge = document.getElementById('profileGenderBadge');
+  badge.innerHTML  = genderIcon(_selectedTitle) + ' ' + genderFromTitle(_selectedTitle);
+  badge.style.display = 'inline-flex';
+
+  document.getElementById('profileHeroCourse').textContent = course || '';
+
+  /* DOB hint */
+  const dobInfo = document.getElementById('profileDobInfo');
+  const sub = dobSubtext(dob);
+  if (sub) {
+    document.getElementById('profileDobInfoText').textContent = sub;
+    dobInfo.style.display = 'flex';
+  } else {
+    dobInfo.style.display = 'none';
+  }
+
+  /* Section sub-greeting */
+  const h = new Date().getHours();
+  const greet = h < 12 ? 'Good morning' : h < 17 ? 'Good afternoon' : 'Good evening';
+  const name = displayName || fullName.split(' ')[0] || '';
+  document.getElementById('profileGreeting').textContent =
+    name ? `${greet}, ${name}! 👋` : 'Keep your details up to date.';
+}
+
+/* Update sidebar display name */
+function updateSidebarDisplayName() {
+  const p = ProfileStore.get();
+  const el = document.getElementById('sidebarDisplayName');
+  if (!el) return;
+  const name = p.displayName || (p.fullName ? p.fullName.split(' ')[0] : '');
+  if (name) {
+    el.textContent    = `${p.title || 'Mr'}. ${name}`;
+    el.style.display  = 'block';
+  } else {
+    el.style.display  = 'none';
+  }
+
+  /* ── Mobile header ── */
+  const mel = document.getElementById('mobileDisplayName');
+  if (!mel) return;
+  if (name) {
+    mel.textContent   = `${p.title || 'Mr'}. ${name}`;
+    mel.style.display = 'inline';
+  } else {
+    mel.style.display = 'none';
+  }
+}
+
+/* Render full Profile section (called on navigate) */
+function renderProfile() {
+  const p = ProfileStore.get();
+  _selectedTitle = p.title || 'Mr';
+
+  document.getElementById('profileFullName').value    = p.fullName    || '';
+  document.getElementById('profileDisplayName').value = p.displayName || '';
+  document.getElementById('profileDOB').value         = p.dob         || '';
+  document.getElementById('profileCourse').value      = p.course      || '';
+
+  document.querySelectorAll('.profile-title-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.title === _selectedTitle));
+
+  applyAvatar(p.avatarDataUrl || '');
+  renderProfileHero();
+
+  /* Stats card */
+  const age    = calcAge(p.dob);
+  const exams  = Store.getExams();
+  const done   = exams.filter(e => Store.getTracker(e.id).status === 'completed').length;
+  const streak = Store.getStreak().count;
+  const statsCard = document.getElementById('profileStatsCard');
+
+  if (p.fullName || p.dob || p.course) {
+    statsCard.style.display = 'block';
+    document.getElementById('pStatAge').textContent    = age !== null ? age : '—';
+    document.getElementById('pStatExams').textContent  = exams.length;
+    document.getElementById('pStatStreak').textContent = streak;
+    document.getElementById('pStatDone').textContent   = done;
+  } else {
+    statsCard.style.display = 'none';
+  }
+}
+
+/* Save */
+function saveProfile() {
+  const fullName = document.getElementById('profileFullName').value.trim();
+  if (!fullName) {
+    showToast('<i class="fa-solid fa-triangle-exclamation"></i> Please enter your full name', 'error');
+    document.getElementById('profileFullName').focus();
+    return;
+  }
+  const p = ProfileStore.get();
+  p.title       = _selectedTitle;
+  p.fullName    = fullName;
+  p.displayName = document.getElementById('profileDisplayName').value.trim() || fullName.split(' ')[0];
+  p.dob         = document.getElementById('profileDOB').value;
+  p.course      = document.getElementById('profileCourse').value.trim();
+  ProfileStore.save(p);
+  renderProfile();
+  updateSidebarDisplayName();
+  showToast('<i class="fa-solid fa-check"></i> Profile saved!', 'success');
+  playSound('profileSaved');
+}
+
+/* Clear */
+function clearProfile() {
+  document.getElementById('profileClearOverlay').classList.add('active');
+  document.getElementById('profileClearModal').classList.add('active');
+}
+
+function confirmClearProfile() {
+  closeProfileClearModal();
+  ProfileStore.save({ title: 'Mr', fullName: '', displayName: '', dob: '', course: '', avatarDataUrl: '' });
+  document.getElementById('profileAvatarInput').value = '';
+  delete document.getElementById('profileDisplayName').dataset.edited;
+  renderProfile();
+  updateSidebarDisplayName();
+  showToast('Profile cleared', '');
+  playSound('profileCleared');
+}
+
+function closeProfileClearModal() {
+  document.getElementById('profileClearOverlay').classList.remove('active');
+  document.getElementById('profileClearModal').classList.remove('active');
+}
+
+/* ============================================================
+   § DOCUMENTS
+   ============================================================ */
+
+const MAX_DOCS = 5;
+const DOC_FILE_MAX_MB = 25;
+
+/* ------ Render / Init ------ */
+function renderDocuments() {
+  const docs = Store.getDocuments();
+  const slots = document.getElementById('docSlots');
+  const emptyState = document.getElementById('docEmptyState');
+  const addBtn = document.getElementById('docAddBtn');
+  const countEl = document.getElementById('docFileCount');
+
+  if (!slots || !countEl) return;
+
+  const filled = docs.filter(Boolean).length;
+  countEl.textContent = `${filled} / ${MAX_DOCS} files`;
+
+  /* Show/hide empty state */
+  emptyState.style.display = filled === 0 ? 'flex' : 'none';
+
+  /* Render each slot that exists */
+  slots.innerHTML = '';
+  const slotsToShow = Math.min(filled + 1, MAX_DOCS); // always show one empty slot after the last filled
+
+  for (let i = 0; i < slotsToShow; i++) {
+    slots.appendChild(buildDocSlot(i, docs[i] || null));
+  }
+
+  /* Show "Add New File" button only when all visible slots are filled and we're under the limit */
+  const allFilled = docs.length >= slotsToShow && slotsToShow < MAX_DOCS;
+  addBtn.style.display = (filled > 0 && filled < MAX_DOCS) ? 'flex' : 'none';
+}
+
+function buildDocSlot(index, doc) {
+  const div = document.createElement('div');
+  div.className = 'doc-slot';
+  div.id = `docSlot${index}`;
+  div.dataset.index = index;
+
+  if (!doc) {
+    /* Empty upload zone */
+    div.innerHTML = `
+      <div class="doc-upload-zone" id="docUploadZone${index}">
+        <input type="file" id="docFileInput${index}" accept="image/*,.pdf" hidden>
+        <label for="docFileInput${index}" class="doc-upload-label">
+          <i class="fa-solid fa-cloud-arrow-up"></i>
+          <span>Upload File</span>
+          <small>Image or PDF · Max ${DOC_FILE_MAX_MB}MB</small>
+        </label>
+      </div>`;
+    /* Bind change event */
+    div.querySelector(`#docFileInput${index}`).addEventListener('change', e => handleDocUpload(e, index));
+    /* Drag-and-drop */
+    const zone = div.querySelector('.doc-upload-zone');
+    zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+    zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+    zone.addEventListener('drop', e => { e.preventDefault(); zone.classList.remove('drag-over'); handleDocDrop(e, index); });
+  } else {
+    /* Filled slot */
+    const isImg = doc.mimeType && doc.mimeType.startsWith('image/');
+    const thumbHtml = isImg
+      ? `<img class="doc-slot-thumb" src="${doc.dataUrl}" alt="thumb">`
+      : `<div class="doc-slot-thumb doc-slot-thumb-pdf"><i class="fa-solid fa-file-pdf"></i></div>`;
+
+    div.innerHTML = `
+      <div class="doc-slot-filled">
+        ${thumbHtml}
+        <div class="doc-slot-meta">
+          <div class="doc-custom-select" id="docTypeDropdown${index}">
+            <button class="doc-select-btn" onclick="toggleDocDropdown(${index})">
+              <i class="fa-solid fa-tag"></i>
+              <span id="docTypeLabel${index}">${esc(doc.type || 'Notes')}</span>
+              <i class="fa-solid fa-chevron-down doc-chevron"></i>
+            </button>
+            <ul class="doc-select-list" id="docTypeList${index}">
+              <li onclick="selectDocType(${index},'Notes')"><i class="fa-solid fa-note-sticky"></i> Notes</li>
+              <li onclick="selectDocType(${index},'Question Paper')"><i class="fa-solid fa-file-lines"></i> Question Paper</li>
+              <li onclick="selectDocType(${index},'Assignment')"><i class="fa-solid fa-pen-to-square"></i> Assignment</li>
+              <li onclick="selectDocType(${index},'Reference')"><i class="fa-solid fa-bookmark"></i> Reference</li>
+              <li onclick="selectDocType(${index},'Other')"><i class="fa-solid fa-file"></i> Other</li>
+            </ul>
+          </div>
+          <input type="text" class="doc-title-input" id="docTitleInput${index}"
+            placeholder="File title…" maxlength="60"
+            value="${esc(doc.title || doc.fileName || '')}"
+            oninput="saveDocMeta(${index})"/>
+        </div>
+        <div class="doc-slot-actions">
+          <button class="doc-btn doc-btn-view"     onclick="previewDoc(${index})" title="View">
+            <i class="fa-solid fa-eye"></i><span>View</span>
+          </button>
+          <button class="doc-btn doc-btn-download" onclick="downloadDoc(${index})" title="Download">
+            <i class="fa-solid fa-download"></i><span>Download</span>
+          </button>
+          <button class="doc-btn doc-btn-delete"   onclick="deleteDoc(${index})" title="Delete">
+            <i class="fa-solid fa-trash"></i><span>Delete</span>
+          </button>
+        </div>
+      </div>`;
+  }
+  return div;
+}
+
+/* ------ Upload Handling ------ */
+function handleDocUpload(e, index) {
+  const file = e.target.files[0];
+  if (file) processDocFile(file, index);
+}
+
+function handleDocDrop(e, index) {
+  const file = e.dataTransfer.files[0];
+  if (file) processDocFile(file, index);
+}
+
+function processDocFile(file, index) {
+  const allowed = ['image/jpeg','image/png','image/gif','image/webp','image/svg+xml','application/pdf'];
+  if (!allowed.includes(file.type)) {
+    showToast('<i class="fa-solid fa-triangle-exclamation"></i> Only image or PDF files allowed', 'error');
+    return;
+  }
+  if (file.size > DOC_FILE_MAX_MB * 1024 * 1024) {
+    showToast(`<i class="fa-solid fa-triangle-exclamation"></i> File too large (max ${DOC_FILE_MAX_MB} MB)`, 'error');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    const docs = Store.getDocuments();
+    docs[index] = {
+      title: file.name.replace(/\.[^/.]+$/, ''), // default title = filename without extension
+      type: 'Notes',
+      dataUrl: e.target.result,
+      mimeType: file.type,
+      fileName: file.name
+    };
+    Store.saveDocuments(docs);
+    renderDocuments();
+    showToast('<i class="fa-solid fa-check"></i> File uploaded!', 'success');
+    playSound('docUploaded');
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ------ Dropdown ------ */
+function toggleDocDropdown(index) {
+  const list = document.getElementById(`docTypeList${index}`);
+  const isOpen = list.classList.contains('open');
+  /* Close all open dropdowns first */
+  document.querySelectorAll('.doc-select-list.open').forEach(l => l.classList.remove('open'));
+  if (!isOpen) list.classList.add('open');
+}
+
+function selectDocType(index, type) {
+  document.getElementById(`docTypeLabel${index}`).textContent = type;
+  document.getElementById(`docTypeList${index}`).classList.remove('open');
+  saveDocMeta(index);
+  playSound('docTypeSet');
+}
+
+/* Close dropdowns when clicking outside */
+document.addEventListener('click', e => {
+  if (!e.target.closest('.doc-custom-select')) {
+    document.querySelectorAll('.doc-select-list.open').forEach(l => l.classList.remove('open'));
+  }
+});
+
+/* ------ Meta Save ------ */
+function saveDocMeta(index) {
+  const docs = Store.getDocuments();
+  if (!docs[index]) return;
+  docs[index].title = document.getElementById(`docTitleInput${index}`)?.value || docs[index].title;
+  docs[index].type  = document.getElementById(`docTypeLabel${index}`)?.textContent || docs[index].type;
+  Store.saveDocuments(docs);
+}
+
+/* ------ Add Slot ------ */
+function addDocSlot() {
+  renderDocuments(); // renderDocuments already calculates correct slotsToShow
+}
+
+/* ------ Delete ------ */
+function deleteDoc(index) {
+  const docs = Store.getDocuments();
+  const doc  = docs[index];
+  if (!doc) return;
+
+  /* Show custom modal */
+  document.getElementById('docDeleteFileName').textContent =
+    `"${doc.title || doc.fileName || 'this file'}"`;
+  document.getElementById('docDeleteConfirmBtn').onclick = () => confirmDeleteDoc(index);
+  document.getElementById('docDeleteOverlay').classList.add('active');
+  document.getElementById('docDeleteModal').classList.add('active');
+}
+
+function confirmDeleteDoc(index) {
+  const docs = Store.getDocuments();
+  docs.splice(index, 1);
+  Store.saveDocuments(docs);
+  closeDeleteDocModal();
+  renderDocuments();
+  showToast('<i class="fa-solid fa-check"></i> File deleted', '');
+  playSound('docDeleted');
+}
+
+function closeDeleteDocModal() {
+  document.getElementById('docDeleteOverlay').classList.remove('active');
+  document.getElementById('docDeleteModal').classList.remove('active');
+}
+
+/* ------ Download ------ */
+function downloadDoc(index) {
+  const doc = Store.getDocuments()[index];
+  if (!doc) return;
+  const a = document.createElement('a');
+  a.href = doc.dataUrl;
+  a.download = doc.fileName || doc.title || 'document';
+  a.click();
+}
+
+/* ------ Preview ------ */
+function previewDoc(index) {
+  const doc = Store.getDocuments()[index];
+  if (!doc) return;
+
+  const overlay = document.getElementById('docPreviewOverlay');
+  const modal   = document.getElementById('docPreviewModal');
+  const title   = document.getElementById('docPreviewTitle');
+  const body    = document.getElementById('docPreviewBody');
+
+  title.innerHTML = `<i class="fa-solid fa-${doc.mimeType?.startsWith('image/') ? 'image' : 'file-pdf'}"></i> ${esc(doc.title || doc.fileName || 'Preview')}`;
+
+  body.innerHTML = '';
+
+  if (doc.mimeType && doc.mimeType.startsWith('image/')) {
+    const img = document.createElement('img');
+    img.src = doc.dataUrl;
+    img.className = 'doc-preview-img';
+    img.alt = doc.title || 'Preview';
+    body.appendChild(img);
+  } else {
+    /* PDF: render in-app using PDF.js onto canvas — no external browser/plugin */
+    const wrap = document.createElement('div');
+    wrap.className = 'doc-preview-pdfjs-wrap';
+
+    const toolbar = document.createElement('div');
+    toolbar.className = 'doc-pdfjs-toolbar';
+    toolbar.innerHTML = `
+      <button class="doc-pdfjs-btn" id="pdfPrevPage"><i class="fa-solid fa-chevron-left"></i></button>
+      <span class="doc-pdfjs-pageinfo">
+        Page <span id="pdfCurrentPage">1</span> of <span id="pdfTotalPages">—</span>
+      </span>
+      <button class="doc-pdfjs-btn" id="pdfNextPage"><i class="fa-solid fa-chevron-right"></i></button>
+      <button class="doc-pdfjs-btn" id="pdfZoomOut"><i class="fa-solid fa-magnifying-glass-minus"></i></button>
+      <button class="doc-pdfjs-btn" id="pdfZoomIn"><i class="fa-solid fa-magnifying-glass-plus"></i></button>
+    `;
+
+    const canvasWrap = document.createElement('div');
+    canvasWrap.className = 'doc-pdfjs-canvas-wrap';
+
+    const canvas = document.createElement('canvas');
+    canvas.id = 'pdfCanvas';
+    canvasWrap.appendChild(canvas);
+    wrap.appendChild(toolbar);
+    wrap.appendChild(canvasWrap);
+    body.appendChild(wrap);
+
+    /* State */
+    let pdfDoc = null, currentPage = 1, currentScale = 1.2;
+
+    function renderPage(num) {
+      pdfDoc.getPage(num).then(page => {
+        const viewport = page.getViewport({ scale: currentScale });
+        const ctx = canvas.getContext('2d');
+        canvas.height = viewport.height;
+        canvas.width  = viewport.width;
+        page.render({ canvasContext: ctx, viewport });
+        document.getElementById('pdfCurrentPage').textContent = num;
+      });
+    }
+
+    /* Load PDF from base64 dataUrl */
+    const base64 = doc.dataUrl.split(',')[1];
+    const binary  = atob(base64);
+    const bytes   = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+    pdfjsLib.getDocument({ data: bytes }).promise.then(pdf => {
+      pdfDoc = pdf;
+      document.getElementById('pdfTotalPages').textContent = pdf.numPages;
+      renderPage(currentPage);
+    });
+
+    /* Controls */
+    document.getElementById('pdfPrevPage').onclick = () => {
+      if (currentPage <= 1) return;
+      currentPage--;
+      renderPage(currentPage);
+    };
+    document.getElementById('pdfNextPage').onclick = () => {
+      if (currentPage >= pdfDoc.numPages) return;
+      currentPage++;
+      renderPage(currentPage);
+    };
+    document.getElementById('pdfZoomIn').onclick = () => {
+      currentScale = Math.min(currentScale + 0.2, 3.0);
+      renderPage(currentPage);
+    };
+    document.getElementById('pdfZoomOut').onclick = () => {
+      currentScale = Math.max(currentScale - 0.2, 0.5);
+      renderPage(currentPage);
+    };
+  }
+
+  overlay.classList.add('active');
+  modal.classList.add('active');
+}
+
+function closeDocPreview() {
+  document.getElementById('docPreviewOverlay').classList.remove('active');
+  document.getElementById('docPreviewModal').classList.remove('active');
+  document.getElementById('docPreviewBody').innerHTML = ''; // free memory
+}
+
+/* ============================================================
+   § TO-DO LIST
+   ============================================================ */
+
+/* Filter state */
+let _todoCatFilter    = 'all';
+let _todoPriFilter    = 'all';
+let _todoStatusFilter = 'all';
+
+/* Category icon map */
+const TODO_CAT_ICONS = {
+  'Exam Prep':      'fa-book-open',
+  'Assignment':     'fa-pen-to-square',
+  'Revision':       'fa-rotate-left',
+  'Project':        'fa-diagram-project',
+  'School Activity':'fa-school',
+  'Personal Study': 'fa-user-graduate',
+  'Other':          'fa-ellipsis'
+};
+
+/* Priority colours using existing CSS vars */
+const TODO_PRI_CLASS = {
+  'High':   'todo-pri-high',
+  'Medium': 'todo-pri-medium',
+  'Low':    'todo-pri-low'
+};
+
+/* ------ Render ------ */
+function renderTodo() {
+  const all     = Store.getTodos();
+  const listEl  = document.getElementById('todoList');
+  const emptyEl = document.getElementById('todoEmptyState');
+  if (!listEl) return;
+
+  /* Summary counts */
+  const now     = new Date(); now.setHours(0,0,0,0);
+  const done    = all.filter(t => t.done).length;
+  const pending = all.filter(t => !t.done).length;
+  const overdue = all.filter(t => !t.done && t.dueDate && new Date(t.dueDate + 'T00:00:00') < now).length;
+  document.getElementById('todoDoneCount').textContent    = done;
+  document.getElementById('todoPendingCount').textContent = pending;
+  document.getElementById('todoOverdueCount').textContent = overdue;
+
+  /* Sub greeting */
+  document.getElementById('todoSub').textContent =
+    all.length === 0 ? 'Stay on top of your tasks.'
+    : done === all.length ? '🎉 All tasks done! Great work!'
+    : `${pending} task${pending !== 1 ? 's' : ''} remaining.`;
+
+  /* Apply filters */
+  let filtered = all.filter((t, i) => {
+    t._index = i; // carry original index for edit/delete
+    if (_todoCatFilter    !== 'all' && t.category !== _todoCatFilter) return false;
+    if (_todoPriFilter    !== 'all' && t.priority !== _todoPriFilter) return false;
+    if (_todoStatusFilter === 'pending' && t.done)  return false;
+    if (_todoStatusFilter === 'done'    && !t.done) return false;
+    return true;
+  });
+
+  /* Sort: undone first, then by due date, then by priority weight */
+  const priWeight = { 'High': 0, 'Medium': 1, 'Low': 2 };
+  filtered.sort((a, b) => {
+    if (a.done !== b.done) return a.done ? 1 : -1;
+    if (a.dueDate && b.dueDate) return new Date(a.dueDate) - new Date(b.dueDate);
+    if (a.dueDate) return -1;
+    if (b.dueDate) return 1;
+    return (priWeight[a.priority] || 1) - (priWeight[b.priority] || 1);
+  });
+
+  if (filtered.length === 0) {
+    listEl.innerHTML  = '';
+    emptyEl.style.display = all.length === 0 ? 'block' : 'none';
+    if (all.length > 0) {
+      listEl.innerHTML = `<p class="empty-msg" style="text-align:center;padding:2rem 0">No tasks match the current filter.</p>`;
+    }
+    return;
+  }
+
+  emptyEl.style.display = 'none';
+  listEl.innerHTML = filtered.map(t => {
+    const idx         = t._index;
+    const catIcon     = TODO_CAT_ICONS[t.category] || 'fa-tag';
+    const priClass    = TODO_PRI_CLASS[t.priority]  || 'todo-pri-medium';
+    const dueTxt      = t.dueDate ? formatDate(t.dueDate) : '';
+    const daysLeft    = t.dueDate ? daysUntil(t.dueDate) : null;
+    const urgClass    = daysLeft !== null && !t.done ? daysClass(daysLeft) : '';
+    const overdueTxt  = daysLeft !== null && daysLeft < 0 && !t.done
+      ? `<span class="todo-overdue-tag"><i class="fa-solid fa-triangle-exclamation"></i> Overdue by ${Math.abs(daysLeft)}d</span>` : '';
+    const dueSoonTxt  = daysLeft !== null && daysLeft >= 0 && daysLeft <= 3 && !t.done
+      ? `<span class="todo-soon-tag"><i class="fa-solid fa-bell"></i> Due soon</span>` : '';
+
+    return `
+      <div class="todo-card ${t.done ? 'todo-done' : ''} ${urgClass}" data-id="${idx}">
+        <button class="todo-check-btn ${t.done ? 'checked' : ''}" onclick="toggleTodoDone(${idx})" title="${t.done ? 'Mark undone' : 'Mark done'}">
+          <i class="fa-${t.done ? 'solid' : 'regular'} fa-circle-check"></i>
+        </button>
+        <div class="todo-card-body">
+          <div class="todo-card-top">
+            <span class="todo-task-text">${esc(t.task)}</span>
+            <span class="todo-pri-badge ${priClass}">${t.priority}</span>
+          </div>
+          <div class="todo-card-meta">
+            <span class="todo-cat-tag"><i class="fa-solid ${catIcon}"></i> ${esc(t.category)}</span>
+            ${dueTxt ? `<span class="todo-due-tag ${urgClass}"><i class="fa-solid fa-calendar-day"></i> ${dueTxt}</span>` : ''}
+            ${overdueTxt}
+            ${dueSoonTxt}
+            ${t.notes ? `<span class="todo-notes-tag"><i class="fa-solid fa-note-sticky"></i> ${esc(t.notes)}</span>` : ''}
+          </div>
+        </div>
+        <div class="todo-card-actions">
+          <button class="btn-icon" onclick="openTodoModal(${idx})" title="Edit"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-icon todo-delete-btn" onclick="openTodoDeleteModal(${idx})" title="Delete"><i class="fa-solid fa-trash"></i></button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+/* ------ Filter chips wiring (called once after DOM ready) ------ */
+function initTodoFilters() {
+  document.querySelectorAll('#todoCategoryFilter .todo-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#todoCategoryFilter .todo-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _todoCatFilter = btn.dataset.cat;
+      renderTodo();
+    });
+  });
+  document.querySelectorAll('#todoPriorityFilter .todo-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#todoPriorityFilter .todo-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _todoPriFilter = btn.dataset.pri;
+      renderTodo();
+    });
+  });
+  document.querySelectorAll('#todoStatusFilter .todo-chip').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#todoStatusFilter .todo-chip').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _todoStatusFilter = btn.dataset.status;
+      renderTodo();
+    });
+  });
+}
+
+/* ------ Modal open/close ------ */
+let _todoEditIndex = -1;
+
+function openTodoModal(index = -1) {
+  _todoEditIndex = index;
+  const isEdit   = index >= 0;
+  document.getElementById('todoModalTitle').innerHTML =
+    `<i class="fa-solid fa-list-check"></i> ${isEdit ? 'Edit Task' : 'Add Task'}`;
+
+  /* Reset fields */
+  document.getElementById('todoEditId').value    = index;
+  document.getElementById('todoTaskInput').value = '';
+  document.getElementById('todoDueDate').value   = '';
+  document.getElementById('todoNotes').value     = '';
+
+  /* Reset category picker */
+  document.querySelectorAll('#todoCatPicker .todo-chip').forEach(b => b.classList.remove('active'));
+  document.querySelector('#todoCatPicker .todo-chip[data-val="Exam Prep"]').classList.add('active');
+
+  /* Reset priority picker */
+  document.querySelectorAll('#todoPriPicker .todo-chip').forEach(b => b.classList.remove('active'));
+  document.querySelector('#todoPriPicker .todo-chip[data-val="High"]').classList.add('active');
+
+  if (isEdit) {
+    const t = Store.getTodos()[index];
+    if (!t) return;
+    document.getElementById('todoTaskInput').value = t.task;
+    document.getElementById('todoDueDate').value   = t.dueDate || '';
+    document.getElementById('todoNotes').value     = t.notes   || '';
+
+    document.querySelectorAll('#todoCatPicker .todo-chip').forEach(b =>
+      b.classList.toggle('active', b.dataset.val === t.category));
+    document.querySelectorAll('#todoPriPicker .todo-chip').forEach(b =>
+      b.classList.toggle('active', b.dataset.val === t.priority));
+  }
+
+  document.getElementById('todoModalOverlay').classList.add('active');
+  document.getElementById('todoModal').classList.add('active');
+  setTimeout(() => document.getElementById('todoTaskInput').focus(), 100);
+}
+
+function closeTodoModal() {
+  document.getElementById('todoModalOverlay').classList.remove('active');
+  document.getElementById('todoModal').classList.remove('active');
+}
+
+/* ------ Chip selectors inside modal ------ */
+function selectTodoCat(btn) {
+  document.querySelectorAll('#todoCatPicker .todo-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+function selectTodoPri(btn) {
+  document.querySelectorAll('#todoPriPicker .todo-chip').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+/* ------ Save ------ */
+function saveTodo() {
+  const task = document.getElementById('todoTaskInput').value.trim();
+  if (!task) {
+    showToast('<i class="fa-solid fa-triangle-exclamation"></i> Please enter a task', 'error');
+    document.getElementById('todoTaskInput').focus();
+    return;
+  }
+  const category = document.querySelector('#todoCatPicker .todo-chip.active')?.dataset.val || 'Other';
+  const priority = document.querySelector('#todoPriPicker .todo-chip.active')?.dataset.val || 'Medium';
+  const dueDate  = document.getElementById('todoDueDate').value  || '';
+  const notes    = document.getElementById('todoNotes').value.trim() || '';
+
+  const todos = Store.getTodos();
+  if (_todoEditIndex >= 0 && todos[_todoEditIndex]) {
+    /* Edit existing — preserve done state */
+    todos[_todoEditIndex] = { ...todos[_todoEditIndex], task, category, priority, dueDate, notes };
+    playSound('todoAdded');
+    showToast('<i class="fa-solid fa-check"></i> Task updated!', 'success');
+  } else {
+    /* New task */
+    todos.push({ task, category, priority, dueDate, notes, done: false, createdAt: Date.now() });
+    playSound('todoAdded');
+    showToast('<i class="fa-solid fa-check"></i> Task added!', 'success');
+  }
+  Store.saveTodos(todos);
+  closeTodoModal();
+  renderTodo();
+}
+
+/* ------ Toggle done ------ */
+function toggleTodoDone(index) {
+  const todos = Store.getTodos();
+  if (!todos[index]) return;
+  todos[index].done = !todos[index].done;
+  Store.saveTodos(todos);
+  if (todos[index].done) {
+    playSound('todoDone');
+    /* Check if ALL tasks are now done */
+    if (todos.every(t => t.done)) {
+      playSound('todoAllDone');
+      showToast('<i class="fa-solid fa-party-horn"></i> All tasks completed! 🎉', 'success', 4000);
+    }
+  } else {
+    playSound('todoAdded');
+  }
+  renderTodo();
+}
+
+/* ------ Delete ------ */
+function openTodoDeleteModal(index) {
+  const t = Store.getTodos()[index];
+  if (!t) return;
+  document.getElementById('todoDeleteTaskName').textContent = `"${t.task}"`;
+  document.getElementById('todoDeleteConfirmBtn').onclick = () => confirmDeleteTodo(index);
+  document.getElementById('todoDeleteOverlay').classList.add('active');
+  document.getElementById('todoDeleteModal').classList.add('active');
+}
+
+function confirmDeleteTodo(index) {
+  const todos = Store.getTodos();
+  todos.splice(index, 1);
+  Store.saveTodos(todos);
+  playSound('todoDeleted');
+  closeTodoDeleteModal();
+  renderTodo();
+  showToast('<i class="fa-solid fa-check"></i> Task deleted', '');
+}
+
+function closeTodoDeleteModal() {
+  document.getElementById('todoDeleteOverlay').classList.remove('active');
+  document.getElementById('todoDeleteModal').classList.remove('active');
+}
+
+/* ------ Init filters on DOMContentLoaded ------ */
+document.addEventListener('DOMContentLoaded', initTodoFilters);
+
+/* ============================================================
+   § TO-DO REMINDERS
+   ============================================================ */
+
+/* Tracks which notification keys were already shown this session
+   so we don't spam the same alert repeatedly */
+const _todoNotifiedKeys = new Set();
+
+/* Send an OS-level notification via the SW LOCAL_NOTIFY channel */
+function sendTodoOSNotification(title, body, tag) {
+  if (!('serviceWorker' in navigator)) return;
+  if (Notification.permission !== 'granted') return;
+  navigator.serviceWorker.ready.then(reg => {
+    reg.active?.postMessage({
+      type: 'LOCAL_NOTIFY',
+      title,
+      options: {
+        body,
+        icon:    './icon-192.png',
+        badge:   './icon-96.png',
+        tag,                      /* same tag = replaces previous, no spam */
+        renotify: false,
+        vibrate: [200, 100, 200],
+        data: { url: '/index.html#todo' }
+      }
+    });
+  });
+}
+
+/* Request notification permission if not yet granted */
+function requestTodoNotificationPermission() {
+  if (!('Notification' in window)) return;
+  if (Notification.permission === 'default') {
+    Notification.requestPermission();
+  }
+}
+
+/* Core checker — runs on page load and every hour */
+function checkTodoReminders() {
+  const todos = Store.getTodos();
+  if (!todos.length) return;
+
+  const today    = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const overdue      = todos.filter(t => !t.done && t.dueDate && new Date(t.dueDate + 'T00:00:00') < today);
+  const dueToday     = todos.filter(t => !t.done && t.dueDate && new Date(t.dueDate + 'T00:00:00').getTime() === today.getTime());
+  const dueTomorrow  = todos.filter(t => !t.done && t.dueDate && new Date(t.dueDate + 'T00:00:00').getTime() === tomorrow.getTime());
+  const highPending  = todos.filter(t => !t.done && t.priority === 'High');
+
+  /* ── Overdue tasks ── */
+  if (overdue.length) {
+    const key = `overdue-${overdue.map(t => t.task).join(',')}`;
+    if (!_todoNotifiedKeys.has(key)) {
+      _todoNotifiedKeys.add(key);
+      playSound('todoReminder');
+      showToast(
+        `<i class="fa-solid fa-triangle-exclamation"></i> ${overdue.length} task${overdue.length > 1 ? 's are' : ' is'} overdue!`,
+        'error', 5000
+      );
+      sendTodoOSNotification(
+        '⚠️ Overdue Tasks',
+        `${overdue.length} task${overdue.length > 1 ? 's are' : ' is'} overdue: ${overdue.slice(0,2).map(t => t.task).join(', ')}${overdue.length > 2 ? '…' : ''}`,
+        'todo-overdue'
+      );
+    }
+  }
+
+  /* ── Due today ── */
+  if (dueToday.length) {
+    const key = `today-${today.toDateString()}`;
+    if (!_todoNotifiedKeys.has(key)) {
+      _todoNotifiedKeys.add(key);
+      playSound('todoReminder');
+      showToast(
+        `<i class="fa-solid fa-calendar-day"></i> ${dueToday.length} task${dueToday.length > 1 ? 's' : ''} due today!`,
+        'warning', 5000
+      );
+      sendTodoOSNotification(
+        '📅 Due Today',
+        `${dueToday.slice(0,2).map(t => t.task).join(', ')}${dueToday.length > 2 ? ` +${dueToday.length - 2} more` : ''}`,
+        'todo-due-today'
+      );
+    }
+  }
+
+  /* ── Due tomorrow ── */
+  if (dueTomorrow.length) {
+    const key = `tomorrow-${tomorrow.toDateString()}`;
+    if (!_todoNotifiedKeys.has(key)) {
+      _todoNotifiedKeys.add(key);
+      showToast(
+        `<i class="fa-solid fa-bell"></i> ${dueTomorrow.length} task${dueTomorrow.length > 1 ? 's' : ''} due tomorrow.`,
+        '', 4000
+      );
+      sendTodoOSNotification(
+        '🔔 Due Tomorrow',
+        `${dueTomorrow.slice(0,2).map(t => t.task).join(', ')}${dueTomorrow.length > 2 ? ` +${dueTomorrow.length - 2} more` : ''}`,
+        'todo-due-tomorrow'
+      );
+    }
+  }
+
+  /* ── High priority pending ── */
+  if (highPending.length) {
+    const key = `high-${today.toDateString()}`;
+    if (!_todoNotifiedKeys.has(key)) {
+      _todoNotifiedKeys.add(key);
+      showToast(
+        `<i class="fa-solid fa-circle-exclamation"></i> ${highPending.length} high-priority task${highPending.length > 1 ? 's' : ''} pending.`,
+        'warning', 4000
+      );
+      sendTodoOSNotification(
+        '🔴 High Priority Tasks',
+        `${highPending.length} high-priority task${highPending.length > 1 ? 's' : ''} still pending.`,
+        'todo-high-priority'
+      );
+    }
+  }
+}
+
+/* Stagger toasts so they don't all fire at once on page load */
+function scheduleTodoReminders() {
+  requestTodoNotificationPermission();
+
+  /* Stagger: overdue → 1s, today → 3s, tomorrow → 5s, high-pri → 7s */
+  const todos   = Store.getTodos();
+  if (!todos.length) return;
+
+  const today   = new Date(); today.setHours(0,0,0,0);
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+
+  const overdue     = todos.filter(t => !t.done && t.dueDate && new Date(t.dueDate + 'T00:00:00') < today);
+  const dueToday    = todos.filter(t => !t.done && t.dueDate && new Date(t.dueDate + 'T00:00:00').getTime() === today.getTime());
+  const dueTomorrow = todos.filter(t => !t.done && t.dueDate && new Date(t.dueDate + 'T00:00:00').getTime() === tomorrow.getTime());
+  const highPending = todos.filter(t => !t.done && t.priority === 'High');
+
+  let delay = 1500;
+  const gap = 2000;
+
+  if (overdue.length) {
+    setTimeout(() => {
+      playSound('todoReminder');
+      showToast(`<i class="fa-solid fa-triangle-exclamation"></i> ${overdue.length} task${overdue.length > 1 ? 's are' : ' is'} overdue!`, 'error', 5000);
+      sendTodoOSNotification('⚠️ Overdue Tasks',
+        `${overdue.slice(0,2).map(t=>t.task).join(', ')}${overdue.length > 2 ? '…' : ''}`, 'todo-overdue');
+    }, delay); delay += gap;
+  }
+
+  if (dueToday.length) {
+    setTimeout(() => {
+      playSound('todoReminder');
+      showToast(`<i class="fa-solid fa-calendar-day"></i> ${dueToday.length} task${dueToday.length > 1 ? 's' : ''} due today!`, 'warning', 5000);
+      sendTodoOSNotification('📅 Due Today',
+        `${dueToday.slice(0,2).map(t=>t.task).join(', ')}${dueToday.length > 2 ? ` +${dueToday.length-2} more` : ''}`, 'todo-due-today');
+    }, delay); delay += gap;
+  }
+
+  if (dueTomorrow.length) {
+    setTimeout(() => {
+      showToast(`<i class="fa-solid fa-bell"></i> ${dueTomorrow.length} task${dueTomorrow.length > 1 ? 's' : ''} due tomorrow.`, '', 4000);
+      sendTodoOSNotification('🔔 Due Tomorrow',
+        `${dueTomorrow.slice(0,2).map(t=>t.task).join(', ')}${dueTomorrow.length > 2 ? ` +${dueTomorrow.length-2} more` : ''}`, 'todo-due-tomorrow');
+    }, delay); delay += gap;
+  }
+
+  if (highPending.length) {
+    setTimeout(() => {
+      showToast(`<i class="fa-solid fa-circle-exclamation"></i> ${highPending.length} high-priority task${highPending.length > 1 ? 's' : ''} pending.`, 'warning', 4000);
+      sendTodoOSNotification('🔴 High Priority',
+        `${highPending.length} high-priority task${highPending.length > 1 ? 's' : ''} still pending.`, 'todo-high-priority');
+    }, delay);
+  }
+
+  /* Re-check every hour for due-today reminders */
+  setInterval(checkTodoReminders, 60 * 60 * 1000);
+}
+
+
+
+/* ============================================================
+   § TAKECARE — Daily wellness check-in
+   ============================================================ */
+
+let tcCurrentDate = getLocalDateString();
+let _tcSliderTimer = null;
+let _tcSliderSoundEnabled = false;
+let tcWaterCount  = 0;
+
+/* ── Get local YYYY-MM-DD ── */
+function getLocalDateString(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+/* ── Date navigator ── */
+function tcChangeDate(dir) {
+
+  // Parse safely in local time
+  const [y, m, d] = tcCurrentDate.split('-').map(Number);
+
+  // Create local date
+  const date = new Date(y, m - 1, d);
+
+  // Change day
+  date.setDate(date.getDate() + dir);
+
+  // Convert back to local YYYY-MM-DD
+  const next = getLocalDateString(date);
+
+  // Today's local date
+  const today = getLocalDateString();
+
+  // Prevent future dates
+  if (next > today) return;
+
+  tcCurrentDate = next;
+  playSound('tcDateNav');
+
+  renderTakeCare();
+}
+
+/* ── Date label formatter ── */
+function tcFormatDateLabel(str) {
+
+  const [y, m, d] = str.split('-').map(Number);
+
+  const date = new Date(y, m - 1, d);
+
+  const today = getLocalDateString();
+
+  if (str === today) {
+    return 'Today — ' + date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      day: 'numeric',
+      month: 'short'
+    });
+  }
+
+  return date.toLocaleDateString('en-US', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short'
+  });
+}
+
+/* ── Main render ── */
+function renderTakeCare() {
+  const today   = new Date().toISOString().split('T')[0];
+  const isToday = tcCurrentDate === today;
+  const all     = Store.getTakeCare();
+  const log     = all[tcCurrentDate] || null;
+
+  /* Date label + next btn */
+  const lbl = document.getElementById('tcDateLabel');
+  if (lbl) lbl.textContent = tcFormatDateLabel(tcCurrentDate);
+  const nextBtn = document.getElementById('tcNextBtn');
+  if (nextBtn) nextBtn.disabled = isToday;
+
+  /* Vibe card */
+  tcRenderVibeCard(log);
+
+  /* Reset UI state to blank, then populate from saved log */
+  tcResetUI();
+  if (log) tcPopulateUI(log);
+
+  /* Grind report always reads live data */
+  tcRenderGrindReport();
+
+  /* Summaries */
+  tcUpdateAllSummaries(log);
+
+  /* Save area */
+  const saveArea = document.getElementById('tc-save-area');
+  if (saveArea) {
+    saveArea.innerHTML = isToday
+      ? `<button class="btn-primary tc-save-btn" onclick="tcSave()">save the vibe ✓</button>`
+      : `<p class="tc-readonly-msg">this is a past log — read only 📖</p>`;
+  }
+
+  /* Make past logs read-only */
+  tcSetReadOnly(!isToday);
+
+  /* Weekly snapshot */
+  tcRenderWeekly();
+  /* Enable slider sound only after render — prevents firing during tcPopulateUI */
+  _tcSliderSoundEnabled = false;
+  setTimeout(() => { _tcSliderSoundEnabled = true; }, 150);
+
+}
+
+/* ── Vibe score calculation ── */
+function tcVibeScore(log) {
+  if (!log) return -1;
+  let score = 0;
+  /* Sleep: rating 0-4 → 0-20pts */
+  if (log.sleep && log.sleep.rating != null) score += (log.sleep.rating / 4) * 20;
+  /* Activity: couch=0, anything else=20 */
+  if (log.activity && log.activity.type) score += log.activity.type === 'couch' ? 0 : 20;
+  /* Screen: 0h=15, 8h=0 (inverse) */
+  if (log.screen && log.screen.total != null) score += Math.max(0, 15 - (log.screen.total / 8) * 15);
+  /* Food: meals/4 * 10 + water/8 * 10 */
+  if (log.food) {
+    const meals = (log.food.meals || []).length;
+    score += (meals / 4) * 10;
+    score += Math.min(10, ((log.food.water || 0) / 8) * 10);
+  }
+  /* Mood: emoji 0-5 → 0-20 */
+  if (log.mood && log.mood.emoji != null) score += (log.mood.emoji / 5) * 20;
+  /* Bonus: note filled */
+  if (log.mood && log.mood.note && log.mood.note.trim().length > 0) score += 5;
+  return Math.round(Math.min(100, score));
+}
+
+function tcVibeClass(score) {
+  if (score < 0)   return { cls: '',              label: 'log your day to see your vibe' };
+  if (score >= 85) return { cls: 'vibe-thriving',  label: 'thriving 🌸' };
+  if (score >= 65) return { cls: 'vibe-okay',      label: 'doing okay 🌿' };
+  if (score >= 45) return { cls: 'vibe-getting',   label: 'getting through it 🌥️' };
+  if (score >= 25) return { cls: 'vibe-rough',     label: 'rough day 🌧️' };
+  return                  { cls: 'vibe-survival',  label: 'survival mode 💀' };
+}
+
+function tcRenderVibeCard(log) {
+  const card  = document.getElementById('tcVibeCard');
+  const label = document.getElementById('tcVibeLabel');
+  if (!card || !label) return;
+  const score = tcVibeScore(log);
+  const v     = tcVibeClass(score);
+  card.className  = 'tc-vibe-card ' + v.cls;
+  label.textContent = v.label;
+}
+
+/* ── Accordion ── */
+function tcToggleCard(id) {
+  const card = document.getElementById('tc-card-' + id);
+  if (!card) return;
+  const isOpen = card.classList.contains('open');
+  document.querySelectorAll('.tc-card.open').forEach(c => c.classList.remove('open'));
+  if (!isOpen) {
+    card.classList.add('open');
+    playSound('tcCardOpen');
+  } else {
+    playSound('tcCardClose');
+  }
+}
+
+function tcCloseAllCards() {
+  document.querySelectorAll('.tc-card.open').forEach(c => c.classList.remove('open'));
+}
+
+/* ── Generic single-select helper ── */
+function tcSelect(btn, groupId) {
+  const container = btn.closest('[id="tc-' + groupId + '"]') ||
+                    btn.closest('.tc-card-body');
+  /* Deselect siblings in same group */
+  const selector = btn.classList.contains('tc-pill')
+    ? '.tc-pill' : btn.classList.contains('tc-emoji-btn')
+    ? '.tc-emoji-btn' : btn.classList.contains('tc-activity-btn')
+    ? '.tc-activity-btn' : null;
+  if (selector && container) {
+    const parentGroup = document.getElementById('tc-' + groupId);
+    if (parentGroup) parentGroup.querySelectorAll(selector).forEach(b => b.classList.remove('active'));
+  }
+  btn.classList.toggle('active');
+
+  /* Special: show/hide duration row for activity */
+  if (groupId === 'activity-type') {
+    const row = document.getElementById('tc-duration-row');
+    if (row) row.style.display = (btn.dataset.val === 'couch' || !btn.classList.contains('active')) ? 'none' : '';
+  }
+  tcUpdateAllSummaries(null);
+
+  /* Sound: different tone for emoji vs pill vs activity */
+  if (btn.classList.contains('tc-emoji-btn'))    playSound('tcEmojiSelect');
+  else if (btn.classList.contains('tc-pill'))     playSound('tcPillSelect');
+  else if (btn.classList.contains('tc-activity-btn')) playSound('tcActivitySelect');
+}
+
+/* ── Meal multi-select ── */
+function tcToggleMeal(btn) {
+  btn.classList.toggle('active');
+  playSound(btn.classList.contains('active') ? 'tcMealToggleOn' : 'tcMealToggleOff');
+  tcUpdateAllSummaries(null);
+}
+
+/* ── Water drops ── */
+function tcSetWater(idx) {
+  /* If tapping the last filled drop, decrement; else fill up to idx */
+  const drops = document.querySelectorAll('#tc-water-drops .tc-drop');
+  const filledCount = document.querySelectorAll('#tc-water-drops .tc-drop.filled').length;
+  if (idx === filledCount - 1) {
+    /* Decrement */
+    tcWaterCount = idx;
+  } else {
+    tcWaterCount = idx + 1;
+  }
+  drops.forEach((d, i) => d.classList.toggle('filled', i < tcWaterCount));
+  playSound(tcWaterCount > 0 ? 'tcWaterFill' : 'tcWaterEmpty');
+  const lbl = document.getElementById('tc-water-label');
+  if (lbl) lbl.textContent = `💧 × ${tcWaterCount}`;
+  tcUpdateAllSummaries(null);
+}
+
+/* ── Sliders ── */
+function tcUpdateSlider(id) {
+  const input = document.getElementById('tc-' + id);
+  const val   = document.getElementById('tc-' + id + '-val');
+  if (!input || !val) return;
+  const v = parseFloat(input.value);
+  val.textContent = v % 1 === 0 ? v + 'h' : v + 'h';
+  if (_tcSliderSoundEnabled) {
+    clearTimeout(_tcSliderTimer);
+    _tcSliderTimer = setTimeout(() => playSound('tcSliderMove'), 80);
+  }
+
+  /* Roast label — based on total screen time */
+  if (id === 'screen-total' || id === 'screen-gaming') {
+    const total = parseFloat(document.getElementById('tc-screen-total')?.value || 0);
+    const roast = document.getElementById('tc-roast-label');
+    if (roast) {
+      if      (total === 0)      roast.textContent = 'respectfully impressive 🫡';
+      else if (total <= 2)       roast.textContent = 'healthy decompression ✅';
+      else if (total <= 4)       roast.textContent = 'okay we had a day 😅';
+      else                       roast.textContent = 'bestie... 💀';
+    }
+  }
+  tcUpdateAllSummaries(null);
+}
+
+/* ── Build 12h select options (called once on DOMContentLoaded) ── */
+function tcBuildTimeSelects() {
+  ['tc-bedtime-h','tc-wake-h'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '';
+    for (let h = 1; h <= 12; h++) {
+      const o = document.createElement('option');
+      o.value = String(h);
+      o.textContent = String(h).padStart(2,'0');
+      sel.appendChild(o);
+    }
+  });
+  ['tc-bedtime-m','tc-wake-m'].forEach(id => {
+    const sel = document.getElementById(id);
+    if (!sel) return;
+    sel.innerHTML = '';
+    for (let m = 0; m < 60; m += 5) {
+      const o = document.createElement('option');
+      o.value = String(m);
+      o.textContent = String(m).padStart(2,'0');
+      sel.appendChild(o);
+    }
+  });
+}
+
+/* ── Sleep duration calc ── */
+function tcCalcSleep() {
+  const dur = document.getElementById('tc-sleep-duration');
+  if (!dur) return;
+
+  /* Read 12h selects → convert to 24h minutes */
+  function readTime(prefix) {
+    const hEl    = document.getElementById(prefix + '-h');
+    const mEl    = document.getElementById(prefix + '-m');
+    const ampmEl = document.getElementById(prefix + '-ampm');
+    if (!hEl || !mEl || !ampmEl) return null;
+    let h = parseInt(hEl.value, 10);
+    const m    = parseInt(mEl.value, 10);
+    const ampm = ampmEl.value;
+    if (ampm === 'AM') { if (h === 12) h = 0; }
+    else               { if (h !== 12) h += 12; }
+    return h * 60 + m;
+  }
+
+  const bedMins  = readTime('tc-bedtime');
+  const wakeMins = readTime('tc-wake');
+  if (bedMins === null || wakeMins === null) { dur.textContent = ''; return; }
+
+  let diff = wakeMins - bedMins;
+  if (diff < 0) diff += 24 * 60; /* crossed midnight */
+  const h = Math.floor(diff / 60), m = diff % 60;
+  dur.textContent = `that's ${h}h${m > 0 ? ' ' + m + 'm' : ''}`;
+}
+
+/* ── Get 24h "HH:MM" string from 12h selects (for storage) ── */
+function tcGetTimeValue(prefix) {
+  const hEl    = document.getElementById(prefix + '-h');
+  const mEl    = document.getElementById(prefix + '-m');
+  const ampmEl = document.getElementById(prefix + '-ampm');
+  if (!hEl || !mEl || !ampmEl) return '';
+  let h = parseInt(hEl.value, 10);
+  const m    = parseInt(mEl.value, 10);
+  const ampm = ampmEl.value;
+  if (ampm === 'AM') { if (h === 12) h = 0; }
+  else               { if (h !== 12) h += 12; }
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+}
+
+/* ── Set 12h selects from a "HH:MM" string (for populate) ── */
+function tcSetTimeValue(prefix, hhmm) {
+  if (!hhmm) return;
+  const [hh, mm] = hhmm.split(':').map(Number);
+  let h    = hh % 12 || 12;
+  const ampm = hh < 12 ? 'AM' : 'PM';
+  /* Round minutes to nearest 5 for the select options */
+  const m5 = Math.round(mm / 5) * 5 % 60;
+  const hEl    = document.getElementById(prefix + '-h');
+  const mEl    = document.getElementById(prefix + '-m');
+  const ampmEl = document.getElementById(prefix + '-ampm');
+  if (hEl)    hEl.value    = String(h);
+  if (mEl)    mEl.value    = String(m5);
+  if (ampmEl) ampmEl.value = ampm;
+}
+
+/* ── Mood note char counter ── */
+function tcNoteCounter() {
+  const ta  = document.getElementById('tc-mood-note');
+  const ctr = document.getElementById('tc-char-count');
+  if (ta && ctr) ctr.textContent = `${ta.value.length} / 120`;
+}
+
+/* ── Grind report ── */
+function tcRenderGrindReport() {
+  const body  = document.getElementById('tc-receipt-body');
+  if (!body) return;
+  const today = new Date().toISOString().split('T')[0];
+  const pomo  = Store.getPomoSettings();
+  const sessions = (pomo.sessionDate === today) ? (pomo.sessions || 0) : 0;
+  const exams = Store.getExams();
+  const upcoming = exams.filter(e => {
+    const d = daysUntil(e.date);
+    return d >= 0 && d <= 3;
+  });
+  let html = `<div class="tc-receipt-row"><span>today's receipts 🧾</span></div>
+    <div class="tc-receipt-row"><span>🍅 pomodoros done</span><strong>${sessions}</strong></div>`;
+  if (upcoming.length === 0) {
+    html += `<div class="tc-receipt-row"><span>📅 no exams in 3 days</span><strong>✅</strong></div>`;
+  } else {
+    upcoming.forEach(ex => {
+      const t = Store.getTracker(ex.id);
+      const topics = t.topics || [];
+      const done   = topics.filter(tp => tp.done).length;
+      const pct    = topics.length ? Math.round((done / topics.length) * 100) : (t.manualProgress || 0);
+      const d      = daysUntil(ex.date);
+      html += `<div class="tc-receipt-row"><span>📅 ${esc(ex.subject)}</span><strong>${d === 0 ? 'today!' : 'in ' + d + 'd'}</strong></div>
+               <div class="tc-receipt-row"><span>📈 progress</span><strong>${pct}%</strong></div>`;
+    });
+  }
+  body.innerHTML = html;
+  /* Grind summary */
+  const sum = document.getElementById('tc-summary-grind');
+  if (sum) sum.textContent = `${sessions} 🍅 • ${upcoming.length} exam${upcoming.length !== 1 ? 's' : ''} soon`;
+}
+
+/* ── Summaries (collapsed header) ── */
+function tcUpdateAllSummaries(log) {
+  /* Sleep */
+  const sleepRatingEmojis = ['💀','😵','😐','😌','🥰'];
+  const sleepActive = document.querySelector('#tc-sleep-rating .tc-emoji-btn.active');
+  
+  const bedtime = tcGetTimeValue('tc-bedtime');
+  const wake    = tcGetTimeValue('tc-wake');
+  let sleepSum = 'not logged yet';
+  if (sleepActive || bedtime) {
+    let parts = [];
+    if (bedtime && wake) {
+      let [bh,bm] = bedtime.split(':').map(Number);
+      let [wh,wm] = wake.split(':').map(Number);
+      let mins = (wh*60+wm)-(bh*60+bm); if(mins<0) mins+=1440;
+      parts.push(`slept ${Math.floor(mins/60)}h${mins%60?mins%60+'m':''}`);
+    }
+    if (sleepActive) parts.push(sleepRatingEmojis[+sleepActive.dataset.val]);
+    sleepSum = parts.join(' ') || 'not logged yet';
+  }
+  const ss = document.getElementById('tc-summary-sleep');
+  if (ss) ss.textContent = sleepSum;
+
+  /* Activity */
+  const actActive = document.querySelector('#tc-activity-type .tc-activity-btn.active');
+  const durActive = document.querySelector('#tc-activity-duration .tc-pill.active');
+  let actSum = 'not logged yet';
+  if (actActive) {
+    actSum = actActive.dataset.val === 'couch'
+      ? 'full couch mode 🛋️'
+      : `${durActive ? durActive.dataset.val : ''} ${actActive.textContent.trim()}`.trim();
+  }
+  const as = document.getElementById('tc-summary-activity');
+  if (as) as.textContent = actSum;
+
+  /* Screen */
+  const st = parseFloat(document.getElementById('tc-screen-total')?.value || 0);
+  const sg = parseFloat(document.getElementById('tc-screen-gaming')?.value || 0);
+  const screenSum = (st > 0 || sg > 0) ? `${st}h screen • ${sg}h gaming` : 'not logged yet';
+  const sc = document.getElementById('tc-summary-screen');
+  if (sc) sc.textContent = screenSum;
+
+  /* Food */
+  const activeMeals = document.querySelectorAll('#tc-meals .tc-meal-btn.active').length;
+  const foodSum = activeMeals > 0 ? `${activeMeals} meals • 💧×${tcWaterCount}` : 'not logged yet';
+  const fs = document.getElementById('tc-summary-food');
+  if (fs) fs.textContent = foodSum;
+
+  /* Mood */
+  const moodEmojis = ['😭','😤','😶','🫠','😌','🤩'];
+  const moodActive   = document.querySelector('#tc-mood-emoji .tc-emoji-btn.active');
+  const stressActive = document.querySelector('#tc-stress .tc-pill.active');
+  let moodSum = 'not logged yet';
+  if (moodActive || stressActive) {
+    const parts = [];
+    if (moodActive)   parts.push(moodEmojis[+moodActive.dataset.val]);
+    if (stressActive) parts.push(stressActive.dataset.val);
+    moodSum = parts.join(' ');
+  }
+  const ms = document.getElementById('tc-summary-mood');
+  if (ms) ms.textContent = moodSum;
+}
+
+/* ── Reset UI to blank ── */
+function tcResetUI() {
+  /* Deselect all buttons */
+  document.querySelectorAll('#takecare .tc-emoji-btn, #takecare .tc-pill, #takecare .tc-activity-btn, #takecare .tc-meal-btn')
+    .forEach(b => b.classList.remove('active'));
+  /* Sliders */
+  ['tc-screen-total','tc-screen-gaming'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = 0; }
+  });
+  document.getElementById('tc-screen-total-val') && (document.getElementById('tc-screen-total-val').textContent = '0h');
+  document.getElementById('tc-screen-gaming-val') && (document.getElementById('tc-screen-gaming-val').textContent = '0h');
+  document.getElementById('tc-roast-label') && (document.getElementById('tc-roast-label').textContent = 'respectfully impressive 🫡');
+  /* Time inputs */
+  ['tc-bedtime','tc-wake'].forEach(prefix => {
+    const hEl = document.getElementById(prefix + '-h');
+    const mEl = document.getElementById(prefix + '-m');
+    const amEl = document.getElementById(prefix + '-ampm');
+    if (hEl) hEl.value = '12';
+    if (mEl) mEl.value = '0';
+    if (amEl) amEl.value = 'AM';
+  });
+  const durEl = document.getElementById('tc-sleep-duration');
+  if (durEl) durEl.textContent = '';
+  /* Water */
+  tcWaterCount = 0;
+  document.querySelectorAll('#tc-water-drops .tc-drop').forEach(d => d.classList.remove('filled'));
+  document.getElementById('tc-water-label') && (document.getElementById('tc-water-label').textContent = '💧 × 0');
+  /* Textarea */
+  const ta = document.getElementById('tc-mood-note');
+  if (ta) ta.value = '';
+  document.getElementById('tc-char-count') && (document.getElementById('tc-char-count').textContent = '0 / 120');
+  /* Duration row */
+  const dr = document.getElementById('tc-duration-row');
+  if (dr) dr.style.display = 'none';
+}
+
+/* ── Populate UI from saved log ── */
+function tcPopulateUI(log) {
+  if (!log) return;
+
+  /* Sleep */
+  if (log.sleep) {
+    if (log.sleep.rating != null) {
+      const btn = document.querySelector(`#tc-sleep-rating .tc-emoji-btn[data-val="${log.sleep.rating}"]`);
+      if (btn) btn.classList.add('active');
+    }
+    if (log.sleep.bedtime) tcSetTimeValue('tc-bedtime', log.sleep.bedtime);
+    if (log.sleep.wake)    tcSetTimeValue('tc-wake',    log.sleep.wake);
+    tcCalcSleep();
+    if (log.sleep.tag) {
+      const btn = document.querySelector(`#tc-sleep-tag .tc-pill[data-val="${esc(log.sleep.tag)}"]`);
+      if (btn) btn.classList.add('active');
+    }
+  }
+
+  /* Activity */
+  if (log.activity && log.activity.type) {
+    const btn = document.querySelector(`#tc-activity-type .tc-activity-btn[data-val="${log.activity.type}"]`);
+    if (btn) {
+      btn.classList.add('active');
+      const dr = document.getElementById('tc-duration-row');
+      if (dr) dr.style.display = log.activity.type === 'couch' ? 'none' : '';
+    }
+    if (log.activity.duration) {
+      const db = document.querySelector(`#tc-activity-duration .tc-pill[data-val="${log.activity.duration}"]`);
+      if (db) db.classList.add('active');
+    }
+  }
+
+  /* Screen */
+  if (log.screen) {
+    const st = document.getElementById('tc-screen-total');
+    if (st) { st.value = log.screen.total || 0; tcUpdateSlider('screen-total'); }
+    const sg = document.getElementById('tc-screen-gaming');
+    if (sg) { sg.value = log.screen.gaming || 0; tcUpdateSlider('screen-gaming'); }
+  }
+
+  /* Food */
+  if (log.food) {
+    (log.food.meals || []).forEach(meal => {
+      const btn = document.querySelector(`#tc-meals .tc-meal-btn[data-val="${meal}"]`);
+      if (btn) btn.classList.add('active');
+    });
+    tcWaterCount = log.food.water || 0;
+    document.querySelectorAll('#tc-water-drops .tc-drop').forEach((d,i) => d.classList.toggle('filled', i < tcWaterCount));
+    const wl = document.getElementById('tc-water-label');
+    if (wl) wl.textContent = `💧 × ${tcWaterCount}`;
+    if (log.food.rating) {
+      const btn = document.querySelector(`#tc-food-rating .tc-pill[data-val="${log.food.rating}"]`);
+      if (btn) btn.classList.add('active');
+    }
+  }
+
+  /* Mood */
+  if (log.mood) {
+    if (log.mood.emoji != null) {
+      const btn = document.querySelector(`#tc-mood-emoji .tc-emoji-btn[data-val="${log.mood.emoji}"]`);
+      if (btn) btn.classList.add('active');
+    }
+    if (log.mood.stress) {
+      const btn = document.querySelector(`#tc-stress .tc-pill[data-val="${log.mood.stress}"]`);
+      if (btn) btn.classList.add('active');
+    }
+    const ta = document.getElementById('tc-mood-note');
+    if (ta && log.mood.note) { ta.value = log.mood.note; tcNoteCounter(); }
+  }
+}
+
+/* ── Set read-only ── */
+function tcSetReadOnly(readonly) {
+  document.querySelectorAll(
+    '#takecare .tc-emoji-btn, #takecare .tc-pill, #takecare .tc-activity-btn, ' +
+    '#takecare .tc-meal-btn, #takecare .tc-drop, #takecare .tc-slider, ' +
+    '#takecare .tc-time-input, #takecare .tc-textarea'
+  ).forEach(el => { el.disabled = readonly; });
+}
+
+/* ── Save ── */
+function tcSave() {
+  const today = new Date().toISOString().split('T')[0];
+  if (tcCurrentDate !== today) return;
+
+  const sleepRatingBtn  = document.querySelector('#tc-sleep-rating .tc-emoji-btn.active');
+  const sleepTagBtn     = document.querySelector('#tc-sleep-tag .tc-pill.active');
+  const actTypeBtn      = document.querySelector('#tc-activity-type .tc-activity-btn.active');
+  const actDurBtn       = document.querySelector('#tc-activity-duration .tc-pill.active');
+  const foodRatingBtn   = document.querySelector('#tc-food-rating .tc-pill.active');
+  const moodEmojiBtn    = document.querySelector('#tc-mood-emoji .tc-emoji-btn.active');
+  const stressBtn       = document.querySelector('#tc-stress .tc-pill.active');
+  const meals           = [...document.querySelectorAll('#tc-meals .tc-meal-btn.active')].map(b => b.dataset.val);
+
+  const log = {
+    sleep: {
+      rating:  sleepRatingBtn  ? +sleepRatingBtn.dataset.val  : null,
+      bedtime: tcGetTimeValue('tc-bedtime'),
+      wake:    tcGetTimeValue('tc-wake'),
+      tag:     sleepTagBtn     ? sleepTagBtn.dataset.val      : '',
+    },
+    activity: {
+      type:     actTypeBtn  ? actTypeBtn.dataset.val  : '',
+      duration: actDurBtn   ? actDurBtn.dataset.val   : '',
+    },
+    screen: {
+      total:  parseFloat(document.getElementById('tc-screen-total')?.value  || 0),
+      gaming: parseFloat(document.getElementById('tc-screen-gaming')?.value || 0),
+    },
+    food: {
+      meals,
+      water:  tcWaterCount,
+      rating: foodRatingBtn ? foodRatingBtn.dataset.val : '',
+    },
+    mood: {
+      emoji:  moodEmojiBtn ? +moodEmojiBtn.dataset.val : null,
+      stress: stressBtn    ? stressBtn.dataset.val     : '',
+      note:   document.getElementById('tc-mood-note')?.value.trim() || '',
+    },
+    savedAt: Date.now(),
+  };
+
+  const all = Store.getTakeCare();
+  all[today] = log;
+  Store.saveTakeCare(all);
+
+  tcRenderVibeCard(log);
+  tcUpdateAllSummaries(log);
+  tcRenderWeekly();
+  showToast('vibe saved 🌿', 'success');
+  playSound('tcVibeSaved');
+}
+
+/* ── Weekly snapshot ── */
+function tcRenderWeekly() {
+  const grid = document.getElementById('tc-weekly-grid');
+  const line = document.getElementById('tc-weekly-line');
+  if (!grid || !line) return;
+  const all  = Store.getTakeCare();
+  const today = new Date();
+
+  let totalSleep = 0, sleepDays = 0;
+  let movedDays = 0;
+  let moodCounts = [0,0,0,0,0,0];
+  let totalScreen = 0, screenDays = 0;
+  let daysLogged = 0;
+  let bestDay = '', bestScore = -1;
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const key = d.toISOString().split('T')[0];
+    const log = all[key];
+    if (!log) continue;
+    daysLogged++;
+
+    /* Sleep hours */
+    if (log.sleep && log.sleep.bedtime && log.sleep.wake) {
+      let [bh,bm] = log.sleep.bedtime.split(':').map(Number);
+      let [wh,wm] = log.sleep.wake.split(':').map(Number);
+      let mins = (wh*60+wm)-(bh*60+bm); if(mins<0) mins+=1440;
+      totalSleep += mins / 60;
+      sleepDays++;
+    }
+    if (log.activity && log.activity.type && log.activity.type !== 'couch') movedDays++;
+    if (log.mood && log.mood.emoji != null) moodCounts[log.mood.emoji]++;
+    if (log.screen && log.screen.total != null) { totalScreen += log.screen.total; screenDays++; }
+
+    const s = tcVibeScore(log);
+    if (s > bestScore) { bestScore = s; bestDay = d.toLocaleDateString('en-US', { weekday:'long' }); }
+  }
+
+  const avgSleep   = sleepDays  ? +(totalSleep / sleepDays).toFixed(1)   : null;
+  const avgScreen  = screenDays ? +(totalScreen / screenDays).toFixed(1) : null;
+  const moodEmojis = ['😭','😤','😶','🫠','😌','🤩'];
+  const topMoodIdx = moodCounts.indexOf(Math.max(...moodCounts));
+  const topMood    = Math.max(...moodCounts) > 0 ? moodEmojis[topMoodIdx] : '—';
+
+  const stats = [
+    { label: 'avg sleep',       val: avgSleep  != null ? avgSleep + 'h'  : '—' },
+    { label: 'days you moved',  val: `${movedDays} / 7` },
+    { label: 'most common mood',val: topMood },
+    { label: 'avg rot time',    val: avgScreen != null ? avgScreen + 'h' : '—' },
+    { label: 'days logged',     val: `${daysLogged} / 7` },
+    { label: 'best day',        val: bestDay || '—' },
+  ];
+
+  grid.innerHTML = stats.map(s => `
+    <div class="tc-weekly-stat">
+      <div class="tc-weekly-stat-label">${s.label}</div>
+      <div class="tc-weekly-stat-val">${s.val}</div>
+    </div>`).join('');
+
+  /* Closing line */
+  const rotAvg = avgScreen || 0;
+  let closingLine = 'keep showing up for yourself 🌱';
+  if      (daysLogged === 0)                          closingLine = 'no data yet — log your first day 🌱';
+  else if (daysLogged <= 2)                           closingLine = 'hard to track a vibe you don\'t log. try tomorrow 🌱';
+  else if (avgSleep != null && avgSleep > 7 && daysLogged >= 5) closingLine = 'you slept well and stayed consistent. lowkey thriving 🌿';
+  else if (avgSleep != null && avgSleep < 5)          closingLine = 'bestie please sleep more 😭 your brain is begging';
+  else if (rotAvg > 4)                                closingLine = 'heavy screen week but you still showed up. we don\'t judge 😅';
+  else if (movedDays >= 5)                            closingLine = 'moving 5+ days? lowkey athlete era 🏃';
+  else if (movedDays === 0)                           closingLine = 'zero movement this week — your couch misses you (and so does the outdoors) 🛋️';
+  else if (topMoodIdx >= 4 && daysLogged >= 4)        closingLine = 'mostly good vibes this week. we see you thriving 🌸';
+  else if (topMoodIdx <= 1 && daysLogged >= 4)        closingLine = 'rough week energy 🌧️ it happens. tomorrow is a fresh page';
+  else if (daysLogged === 7)                          closingLine = '7 days logged in a row 🔥 you\'re actually built different';
+  else if (avgSleep != null && avgSleep >= 7 && movedDays >= 3) closingLine = 'sleep + movement combo? your brain is eating well 🧠';
+
+  line.textContent = closingLine;
 }

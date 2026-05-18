@@ -1,0 +1,95 @@
+{
+  "version": 1,
+  "actions": [
+    {
+      "id": "open-dashboard",
+      "description": "Overview of your exams and study progress",
+      "invocation": {
+        "type": "uri",
+        "uri": "https://examia.navahue.workers.dev/index.html#dashboard"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "open-planner",
+      "description": "Plan and manage your upcoming exams",
+      "invocation": {
+        "type": "uri",
+        "uri": "https://examia.navahue.workers.dev/index.html#planner"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "open-tracker",
+      "description": "Track your study progress per exam",
+      "invocation": {
+        "type": "uri",
+        "uri": "https://examia.navahue.workers.dev/index.html#tracker"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "open-pomodoro",
+      "description": "Start a focused Pomodoro session",
+      "invocation": {
+        "type": "uri",
+        "uri": "https://examia.navahue.workers.dev/index.html#pomodoro"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "open-motivation",
+      "description": "Get a motivational quote to keep going",
+      "invocation": {
+        "type": "uri",
+        "uri": "https://examia.navahue.workers.dev/index.html#motivation"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "open-timetable",
+      "description": "View and manage your study timetable",
+      "invocation": {
+        "type": "uri",
+        "uri": "https://examia.navahue.workers.dev/index.html#timetable"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "open-todo",
+      "description": "Manage your daily tasks and responsibilities",
+      "invocation": {
+        "type": "uri",
+        "uri": "https://examia.navahue.workers.dev/index.html#todo"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "open-takecare",
+      "description": "Log your daily wellness vibe",
+      "invocation": {
+        "type": "uri",
+        "uri": "https://examia.navahue.workers.dev/index.html#takecare"
+      },
+      "inputs": [],
+      "outputs": []
+    },
+    {
+      "id": "open-documents",
+      "description": "Access and manage your important documents",
+      "invocation": {
+        "type": "uri",
+        "uri": "https://examia.navahue.workers.dev/index.html#documents"
+      },
+      "inputs": [],
+      "outputs": []
+    }
+  ]
+}

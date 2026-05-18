@@ -15,11 +15,17 @@
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=Nunito:ital,wght@0,300;0,400;0,500;0,600;1,400&display=swap" rel="stylesheet" />
   <!-- Font Awesome 6 -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc =
+      'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  </script>
 
   <!-- PWA: Apple touch icon -->
   <link rel="apple-touch-icon" href="icon-192.png" />
   <!-- PWA: Apple meta tags -->
   <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="Examia" />
   <!-- PWA: iOS splash screens -->
@@ -65,6 +71,7 @@
     <span class="brand-icon"><i class="fa-solid fa-user-graduate"></i></span>
     <div class="brand-info">
       <span class="brand-name">Examia</span>
+      <span class="brand-display-name" id="sidebarDisplayName" style="display:none"></span>
       <div class="brand-clock">
         <span id="sidebarTime"></span>
         <span class="brand-clock-sep">&#183;</span>
@@ -90,6 +97,24 @@
     <li><button class="nav-btn" data-section="motivation">
       <i class="fa-solid fa-lightbulb nav-icon"></i><span>Motivation</span>
     </button></li>
+    <li><button class="nav-btn" data-section="todo">
+      <i class="fa-solid fa-list-check nav-icon"></i><span>To-Do List</span>
+    </button></li>
+    <li><button class="nav-btn" data-section="takecare">
+      <i class="fa-solid fa-heart-pulse nav-icon"></i><span>TakeCare</span>
+    </button></li>
+    <li><button class="nav-btn" data-section="documents">
+      <i class="fa-solid fa-folder-open nav-icon"></i><span>Documents</span>
+    </button></li>
+    <li><button class="nav-btn" data-section="notepad">
+      <i class="fa-solid fa-note-sticky nav-icon"></i><span>Notepad</span>
+    </button></li>
+    <li><button class="nav-btn" data-section="timetable">
+       <i class="fa-solid fa-table-cells-large nav-icon"></i><span>Day Planner</span>
+     </button></li>
+    <li><button class="nav-btn" data-section="profile">
+      <i class="fa-solid fa-user nav-icon"></i><span>Profile</span>
+    </button></li>
   </ul>
   <div class="sidebar-footer">
     <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
@@ -101,7 +126,7 @@
     </div>
   </div>
   <div class="sidebar-credit">
-      © 2026 • Developed by - NavaHue
+      © 2026 • Examia v10 • Developed by <strong>NavaHue</strong>
   </div>
 </nav>
 
@@ -117,6 +142,7 @@
       <span class="brand-clock-sep">&#183;</span>
       <span id="mobileDate"></span>
     </div>
+    <span class="mobile-display-name" id="mobileDisplayName" style="display:none"></span>
   </div>
   <button class="theme-toggle-mobile" id="themeToggleMobile"><i class="fa-solid fa-moon" id="themeIconMobile"></i></button>
 </header>
@@ -188,6 +214,9 @@
       </button>
       <button class="quick-btn btn-secondary" onclick="navigate('pomodoro')">
         <i class="fa-solid fa-clock"></i> Start Timer
+      </button>
+      <button class="quick-btn btn-secondary" onclick="navigate('todo'); openTodoModal()">
+        <i class="fa-solid fa-list-check"></i> Add Task
       </button>
     </div>
   </section>
@@ -392,6 +421,627 @@
     <div class="quote-grid" id="quoteGrid"></div>
   </section>
 
+  <!-- ========== TO-DO LIST ========== -->
+  <section id="todo" class="section">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">To-Do List</h1>
+        <p class="section-sub" id="todoSub">Stay on top of your tasks.</p>
+      </div>
+      <button class="btn-primary btn-sm" onclick="openTodoModal()">
+        <i class="fa-solid fa-plus"></i> Add Task
+      </button>
+    </div>
+
+    <!-- Summary strip -->
+    <div class="todo-summary-strip">
+      <div class="todo-summary-pill">
+        <i class="fa-solid fa-circle-check" style="color:var(--success)"></i>
+        <span id="todoDoneCount">0</span> Done
+      </div>
+      <div class="todo-summary-pill">
+        <i class="fa-solid fa-hourglass-half" style="color:var(--accent)"></i>
+        <span id="todoPendingCount">0</span> Pending
+      </div>
+      <div class="todo-summary-pill">
+        <i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i>
+        <span id="todoOverdueCount">0</span> Overdue
+      </div>
+    </div>
+
+    <!-- Filter bar -->
+    <div class="todo-filter-bar">
+
+      <!-- Category row -->
+      <div class="todo-filter-row">
+        <div class="todo-filter-row-label">
+          <i class="fa-solid fa-tag"></i> Category
+        </div>
+        <div class="todo-filter-chips" id="todoCategoryFilter">
+          <button class="todo-chip active" data-cat="all"><i class="fa-solid fa-border-all"></i> All</button>
+          <button class="todo-chip" data-cat="Exam Prep"><i class="fa-solid fa-book-open"></i> Exam Prep</button>
+          <button class="todo-chip" data-cat="Assignment"><i class="fa-solid fa-pen-to-square"></i> Assignment</button>
+          <button class="todo-chip" data-cat="Revision"><i class="fa-solid fa-rotate-left"></i> Revision</button>
+          <button class="todo-chip" data-cat="Project"><i class="fa-solid fa-diagram-project"></i> Project</button>
+          <button class="todo-chip" data-cat="School Activity"><i class="fa-solid fa-school"></i> School Activity</button>
+          <button class="todo-chip" data-cat="Personal Study"><i class="fa-solid fa-user-graduate"></i> Personal Study</button>
+          <button class="todo-chip" data-cat="Other"><i class="fa-solid fa-ellipsis"></i> Other</button>
+        </div>
+      </div>
+
+      <div class="todo-filter-divider"></div>
+
+      <!-- Priority + Status row — side by side -->
+      <div class="todo-filter-bottom-row">
+        <div class="todo-filter-row todo-filter-row-inline">
+          <div class="todo-filter-row-label">
+            <i class="fa-solid fa-arrow-up-wide-short"></i> Priority
+          </div>
+          <div class="todo-filter-chips" id="todoPriorityFilter">
+            <button class="todo-chip active" data-pri="all"><i class="fa-solid fa-border-all"></i> All</button>
+            <button class="todo-chip todo-chip-high"   data-pri="High"><i class="fa-solid fa-circle-exclamation"></i> High</button>
+            <button class="todo-chip todo-chip-medium" data-pri="Medium"><i class="fa-solid fa-circle-minus"></i> Medium</button>
+            <button class="todo-chip todo-chip-low"    data-pri="Low"><i class="fa-solid fa-circle-dot"></i> Low</button>
+          </div>
+        </div>
+
+        <div class="todo-filter-vsep"></div>
+
+        <div class="todo-filter-row todo-filter-row-inline">
+          <div class="todo-filter-row-label">
+            <i class="fa-solid fa-eye"></i> Show
+          </div>
+          <div class="todo-filter-chips" id="todoStatusFilter">
+            <button class="todo-chip active" data-status="all"><i class="fa-solid fa-border-all"></i> All</button>
+            <button class="todo-chip" data-status="pending"><i class="fa-solid fa-hourglass-half"></i> Pending</button>
+            <button class="todo-chip" data-status="done"><i class="fa-solid fa-circle-check"></i> Done</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Task list -->
+    <div id="todoList" class="todo-list">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- Empty state -->
+    <div class="empty-state" id="todoEmptyState" style="display:none">
+      <div class="empty-emoji"><i class="fa-solid fa-list-check fa-2x"></i></div>
+      <p>No tasks yet.<br>Add your first task to get started!</p>
+      <button class="btn-primary btn-sm" onclick="openTodoModal()">
+        <i class="fa-solid fa-plus"></i> Add Task
+      </button>
+    </div>
+  </section>
+
+  <!-- ========== TAKECARE ========== -->
+  <section id="takecare" class="section">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">TakeCare 🌿</h1>
+        <p class="section-sub">your daily vibe check</p>
+      </div>
+      <div class="tc-date-nav">
+        <button class="btn-icon" id="tcPrevBtn" onclick="tcChangeDate(-1)" title="Previous day">
+          <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <span class="tc-date-label" id="tcDateLabel"></span>
+        <button class="btn-icon" id="tcNextBtn" onclick="tcChangeDate(1)" title="Next day">
+          <i class="fa-solid fa-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Vibe Score Card -->
+    <div class="tc-vibe-card" id="tcVibeCard">
+      <span class="tc-vibe-label" id="tcVibeLabel">log your day to see your vibe</span>
+    </div>
+
+    <!-- Accordion Cards -->
+    <div class="tc-accordion" id="tcAccordion">
+
+      <!-- Card 1: Sleep -->
+      <div class="tc-card" id="tc-card-sleep">
+        <button class="tc-card-header" onclick="tcToggleCard('sleep')">
+          <span class="tc-card-title"><span class="tc-card-emoji">💤</span> Last Night</span>
+          <span class="tc-card-summary" id="tc-summary-sleep">not logged yet</span>
+          <i class="fa-solid fa-chevron-down tc-chevron"></i>
+        </button>
+        <div class="tc-card-body" id="tc-body-sleep">
+          <p class="tc-label">you actually slept?</p>
+          <div class="tc-emoji-row" id="tc-sleep-rating">
+            <button class="tc-emoji-btn" data-val="0" onclick="tcSelect(this,'sleep-rating')">💀<span>trash</span></button>
+            <button class="tc-emoji-btn" data-val="1" onclick="tcSelect(this,'sleep-rating')">😵<span>rough</span></button>
+            <button class="tc-emoji-btn" data-val="2" onclick="tcSelect(this,'sleep-rating')">😐<span>meh</span></button>
+            <button class="tc-emoji-btn" data-val="3" onclick="tcSelect(this,'sleep-rating')">😌<span>fine</span></button>
+            <button class="tc-emoji-btn" data-val="4" onclick="tcSelect(this,'sleep-rating')">🥰<span>ate well</span></button>
+          </div>
+          <div class="tc-time-row">
+            <div class="tc-time-group">
+              <label class="tc-time-label">FROM</label>
+              <div class="tc-time-12h" id="tc-bedtime-wrap">
+                <select class="tc-time-sel tc-time-hr" id="tc-bedtime-h" onchange="tcCalcSleep()"></select>
+                <span class="tc-time-colon">:</span>
+                <select class="tc-time-sel tc-time-min" id="tc-bedtime-m" onchange="tcCalcSleep()"></select>
+                <select class="tc-time-sel tc-time-ampm" id="tc-bedtime-ampm" onchange="tcCalcSleep()">
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </div>
+
+            <span class="tc-time-arrow"><i class="fa-solid fa-arrow-right"></i></span>
+
+            <div class="tc-time-group">
+              <label class="tc-time-label">TO</label>
+              <div class="tc-time-12h" id="tc-wake-wrap">
+                <select class="tc-time-sel tc-time-hr" id="tc-wake-h" onchange="tcCalcSleep()"></select>
+                <span class="tc-time-colon">:</span>
+                <select class="tc-time-sel tc-time-min" id="tc-wake-m" onchange="tcCalcSleep()"></select>
+                <select class="tc-time-sel tc-time-ampm" id="tc-wake-ampm" onchange="tcCalcSleep()">
+                  <option value="AM">AM</option>
+                  <option value="PM">PM</option>
+                </select>
+              </div>
+            </div>
+
+            <span class="tc-sleep-duration" id="tc-sleep-duration"></span>
+          </div>
+          <div class="tc-pills" id="tc-sleep-tag">
+            <button class="tc-pill" data-val="couldn't stop thinking" onclick="tcSelect(this,'sleep-tag')">couldn't stop thinking</button>
+            <button class="tc-pill" data-val="woke up 5 times" onclick="tcSelect(this,'sleep-tag')">woke up 5 times</button>
+            <button class="tc-pill" data-val="slept like a rock" onclick="tcSelect(this,'sleep-tag')">slept like a rock</button>
+            <button class="tc-pill" data-val="dreams were wild" onclick="tcSelect(this,'sleep-tag')">dreams were wild</button>
+            <button class="tc-pill" data-val="alarm betrayed me" onclick="tcSelect(this,'sleep-tag')">alarm betrayed me</button>
+            <button class="tc-pill" data-val="actually rested" onclick="tcSelect(this,'sleep-tag')">actually rested</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 2: Activity -->
+      <div class="tc-card" id="tc-card-activity">
+        <button class="tc-card-header" onclick="tcToggleCard('activity')">
+          <span class="tc-card-title"><span class="tc-card-emoji">🔥</span> You Moved!</span>
+          <span class="tc-card-summary" id="tc-summary-activity">not logged yet</span>
+          <i class="fa-solid fa-chevron-down tc-chevron"></i>
+        </button>
+        <div class="tc-card-body" id="tc-body-activity">
+          <p class="tc-label">did your body touch grass today?</p>
+          <div class="tc-activity-grid" id="tc-activity-type">
+            <button class="tc-activity-btn" data-val="couch" onclick="tcSelect(this,'activity-type')">🛋️ Full couch mode</button>
+            <button class="tc-activity-btn" data-val="walk" onclick="tcSelect(this,'activity-type')">🚶 Walked</button>
+            <button class="tc-activity-btn" data-val="gym" onclick="tcSelect(this,'activity-type')">🏃 Ran/gym</button>
+            <button class="tc-activity-btn" data-val="yoga" onclick="tcSelect(this,'activity-type')">🧘 Yoga/stretched</button>
+            <button class="tc-activity-btn" data-val="sport" onclick="tcSelect(this,'activity-type')">🏏 Played a sport</button>
+            <button class="tc-activity-btn" data-val="dance" onclick="tcSelect(this,'activity-type')">💃 Danced it out</button>
+          </div>
+          <div class="tc-duration-row" id="tc-duration-row" style="display:none">
+            <p class="tc-label">for how long?</p>
+            <div class="tc-pills" id="tc-activity-duration">
+              <button class="tc-pill" data-val="15m" onclick="tcSelect(this,'activity-duration')">15m</button>
+              <button class="tc-pill" data-val="30m" onclick="tcSelect(this,'activity-duration')">30m</button>
+              <button class="tc-pill" data-val="45m" onclick="tcSelect(this,'activity-duration')">45m</button>
+              <button class="tc-pill" data-val="1h" onclick="tcSelect(this,'activity-duration')">1h</button>
+              <button class="tc-pill" data-val="1h+" onclick="tcSelect(this,'activity-duration')">1h+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 3: Screen -->
+      <div class="tc-card" id="tc-card-screen">
+        <button class="tc-card-header" onclick="tcToggleCard('screen')">
+          <span class="tc-card-title"><span class="tc-card-emoji">📱</span> Rot Time</span>
+          <span class="tc-card-summary" id="tc-summary-screen">not logged yet</span>
+          <i class="fa-solid fa-chevron-down tc-chevron"></i>
+        </button>
+        <div class="tc-card-body" id="tc-body-screen">
+          <p class="tc-label">no judgment zone. how deep did you go?</p>
+          <div class="tc-slider-group">
+            <label class="tc-slider-label">phone/screen (not studying):</label>
+            <input type="range" class="tc-slider" id="tc-screen-total" min="0" max="8" step="0.5" value="0"
+                  oninput="tcUpdateSlider('screen-total')"/>
+            <span class="tc-slider-val" id="tc-screen-total-val">0h</span>
+          </div>
+          <div class="tc-slider-group">
+            <label class="tc-slider-label">gaming specifically:</label>
+            <input type="range" class="tc-slider" id="tc-screen-gaming" min="0" max="4" step="0.5" value="0"
+                  oninput="tcUpdateSlider('screen-gaming')"/>
+            <span class="tc-slider-val" id="tc-screen-gaming-val">0h</span>
+          </div>
+          <div class="tc-roast-label" id="tc-roast-label">respectfully impressive 🫡</div>
+        </div>
+      </div>
+
+      <!-- Card 4: Food -->
+      <div class="tc-card" id="tc-card-food">
+        <button class="tc-card-header" onclick="tcToggleCard('food')">
+          <span class="tc-card-title"><span class="tc-card-emoji">🍜</span> Fed Yourself?</span>
+          <span class="tc-card-summary" id="tc-summary-food">not logged yet</span>
+          <i class="fa-solid fa-chevron-down tc-chevron"></i>
+        </button>
+        <div class="tc-card-body" id="tc-body-food">
+          <p class="tc-label">meals unlocked today:</p>
+          <div class="tc-meals-row" id="tc-meals">
+            <button class="tc-meal-btn" data-val="breakfast" onclick="tcToggleMeal(this)">🌅 Breakfast</button>
+            <button class="tc-meal-btn" data-val="lunch" onclick="tcToggleMeal(this)">☀️ Lunch</button>
+            <button class="tc-meal-btn" data-val="dinner" onclick="tcToggleMeal(this)">🌙 Dinner</button>
+            <button class="tc-meal-btn" data-val="snacks" onclick="tcToggleMeal(this)">🍟 Snacks</button>
+          </div>
+          <p class="tc-label" id="tc-water-label">💧 × 0</p>
+          <div class="tc-water-row" id="tc-water-drops">
+            <button class="tc-drop" data-idx="0" onclick="tcSetWater(0)">💧</button>
+            <button class="tc-drop" data-idx="1" onclick="tcSetWater(1)">💧</button>
+            <button class="tc-drop" data-idx="2" onclick="tcSetWater(2)">💧</button>
+            <button class="tc-drop" data-idx="3" onclick="tcSetWater(3)">💧</button>
+            <button class="tc-drop" data-idx="4" onclick="tcSetWater(4)">💧</button>
+            <button class="tc-drop" data-idx="5" onclick="tcSetWater(5)">💧</button>
+            <button class="tc-drop" data-idx="6" onclick="tcSetWater(6)">💧</button>
+            <button class="tc-drop" data-idx="7" onclick="tcSetWater(7)">💧</button>
+          </div>
+          <div class="tc-pills" id="tc-food-rating">
+            <button class="tc-pill" data-val="king" onclick="tcSelect(this,'food-rating')">ate like a king 👑</button>
+            <button class="tc-pill" data-val="survived" onclick="tcSelect(this,'food-rating')">survived 🫡</button>
+            <button class="tc-pill" data-val="forgot" onclick="tcSelect(this,'food-rating')">forgot to eat 💀</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Card 5: Mood -->
+      <div class="tc-card" id="tc-card-mood">
+        <button class="tc-card-header" onclick="tcToggleCard('mood')">
+          <span class="tc-card-title"><span class="tc-card-emoji">🧠</span> Brain Check</span>
+          <span class="tc-card-summary" id="tc-summary-mood">not logged yet</span>
+          <i class="fa-solid fa-chevron-down tc-chevron"></i>
+        </button>
+        <div class="tc-card-body" id="tc-body-mood">
+          <p class="tc-label">current vibe is:</p>
+          <div class="tc-emoji-row tc-mood-row" id="tc-mood-emoji">
+            <button class="tc-emoji-btn tc-mood-btn" data-val="0" onclick="tcSelect(this,'mood-emoji')">😭</button>
+            <button class="tc-emoji-btn tc-mood-btn" data-val="1" onclick="tcSelect(this,'mood-emoji')">😤</button>
+            <button class="tc-emoji-btn tc-mood-btn" data-val="2" onclick="tcSelect(this,'mood-emoji')">😶</button>
+            <button class="tc-emoji-btn tc-mood-btn" data-val="3" onclick="tcSelect(this,'mood-emoji')">🫠</button>
+            <button class="tc-emoji-btn tc-mood-btn" data-val="4" onclick="tcSelect(this,'mood-emoji')">😌</button>
+            <button class="tc-emoji-btn tc-mood-btn" data-val="5" onclick="tcSelect(this,'mood-emoji')">🤩</button>
+          </div>
+          <div class="tc-pills" id="tc-stress">
+            <button class="tc-pill" data-val="zen" onclick="tcSelect(this,'stress')">zen mode 🌿</button>
+            <button class="tc-pill" data-val="unwell" onclick="tcSelect(this,'stress')">a little unwell 😅</button>
+            <button class="tc-pill" data-val="fire" onclick="tcSelect(this,'stress')">everything is on fire 🔥</button>
+          </div>
+          <textarea class="tc-textarea" id="tc-mood-note" placeholder="type it out, get it out..."
+                    maxlength="120" rows="2" oninput="tcNoteCounter()"></textarea>
+          <span class="tc-char-count" id="tc-char-count">0 / 120</span>
+        </div>
+      </div>
+
+      <!-- Card 6: Grind Report (read-only) -->
+      <div class="tc-card" id="tc-card-grind">
+        <button class="tc-card-header" onclick="tcToggleCard('grind')">
+          <span class="tc-card-title"><span class="tc-card-emoji">📚</span> Grind Report</span>
+          <span class="tc-card-summary" id="tc-summary-grind">—</span>
+          <i class="fa-solid fa-chevron-down tc-chevron"></i>
+        </button>
+        <div class="tc-card-body" id="tc-body-grind">
+          <div class="tc-receipt" id="tc-receipt-body"></div>
+        </div>
+      </div>
+
+    </div><!-- /tc-accordion -->
+
+    <!-- Save / Read-only -->
+    <div id="tc-save-area"></div>
+
+    <!-- Weekly Snapshot -->
+    <div class="tc-weekly" id="tc-weekly">
+      <h2 class="tc-weekly-title">your week, honestly 📊</h2>
+      <div class="tc-weekly-grid" id="tc-weekly-grid"></div>
+      <p class="tc-weekly-line" id="tc-weekly-line"></p>
+    </div>
+
+  </section>
+
+  <!-- ========== DOCUMENTS ========== -->
+  <section id="documents" class="section">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">Documents</h1>
+        <p class="section-sub">Store up to 5 image or PDF files.</p>
+      </div>
+      <span class="doc-file-count" id="docFileCount">0 / 5 files</span>
+    </div>
+
+    <!-- Empty state (shown when no slots have files) -->
+    <div class="doc-empty-state" id="docEmptyState">
+      <i class="fa-solid fa-folder-open doc-empty-icon"></i>
+      <p>No documents yet.<br>Add up to 5 image or PDF files.</p>
+    </div>
+
+    <!-- File slots: Container 1–5 -->
+    <div class="doc-slots" id="docSlots">
+      <!-- Slot 1 is always visible. Slots 2–5 appear when previous slot has a file -->
+      <div class="doc-slot" id="docSlot0" data-index="0">
+        <!-- Upload Zone (shown when slot is empty) -->
+        <div class="doc-upload-zone" id="docUploadZone0">
+          <input type="file" id="docFileInput0" accept="image/*,.pdf" hidden>
+          <label for="docFileInput0" class="doc-upload-label">
+            <i class="fa-solid fa-cloud-arrow-up"></i>
+            <span>Upload File</span>
+            <small>Image or PDF only</small>
+          </label>
+        </div>
+
+        <!-- Slot filled UI (shown when slot has a file) -->
+        <div class="doc-slot-filled" id="docSlotFilled0" style="display:none">
+          <div class="doc-slot-meta">
+            <!-- File Type Dropdown -->
+            <div class="doc-custom-select" id="docTypeDropdown0">
+              <button class="doc-select-btn" onclick="toggleDocDropdown(0)">
+                <i class="fa-solid fa-tag"></i>
+                <span id="docTypeLabel0">Notes</span>
+                <i class="fa-solid fa-chevron-down doc-chevron"></i>
+              </button>
+              <ul class="doc-select-list" id="docTypeList0">
+                <li onclick="selectDocType(0,'Notes')"><i class="fa-solid fa-note-sticky"></i> Notes</li>
+                <li onclick="selectDocType(0,'Question Paper')"><i class="fa-solid fa-file-lines"></i> Question Paper</li>
+                <li onclick="selectDocType(0,'Assignment')"><i class="fa-solid fa-pen-to-square"></i> Assignment</li>
+                <li onclick="selectDocType(0,'Reference')"><i class="fa-solid fa-bookmark"></i> Reference</li>
+                <li onclick="selectDocType(0,'Other')"><i class="fa-solid fa-file"></i> Other</li>
+              </ul>
+            </div>
+
+            <!-- Custom Title Input -->
+            <input
+              type="text"
+              class="doc-title-input"
+              id="docTitleInput0"
+              placeholder="File title…"
+              maxlength="60"
+              oninput="saveDocMeta(0)"
+            />
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="doc-slot-actions">
+            <button class="doc-btn doc-btn-view"     onclick="previewDoc(0)" title="View File">
+              <i class="fa-solid fa-eye"></i><span>View</span>
+            </button>
+            <button class="doc-btn doc-btn-download" onclick="downloadDoc(0)" title="Download File">
+              <i class="fa-solid fa-download"></i><span>Download</span>
+            </button>
+            <button class="doc-btn doc-btn-delete"   onclick="deleteDoc(0)" title="Delete File">
+              <i class="fa-solid fa-trash"></i><span>Delete</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <!-- Slots 1–4 are injected by JS (same structure, index 1,2,3,4) -->
+    </div>
+
+    <!-- Add New File Button (shown when <5 slots filled AND last slot has file) -->
+    <button class="doc-add-btn" id="docAddBtn" onclick="addDocSlot()">
+      <i class="fa-solid fa-plus"></i>  <strong>Upload File</strong>- Click Above
+    </button>
+  </section>
+
+  <!-- ========== PROFILE ========== -->
+  <section id="profile" class="section">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">My Profile</h1>
+        <p class="section-sub" id="profileGreeting">Keep your details up to date.</p>
+      </div>
+    </div>
+
+    <!-- Avatar + identity hero -->
+    <div class="profile-hero card">
+      <div class="profile-avatar-wrap">
+        <div class="profile-avatar" id="profileAvatarDisplay">
+          <img id="profileAvatarImg" src="" alt="Profile picture" style="display:none"/>
+          <i class="fa-solid fa-user-graduate profile-avatar-placeholder" id="profileAvatarPlaceholder"></i>
+        </div>
+        <label class="profile-avatar-edit" for="profileAvatarInput" title="Change photo">
+          <i class="fa-solid fa-camera"></i>
+        </label>
+        <input type="file" id="profileAvatarInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)"/>
+      </div>
+      <div class="profile-hero-info">
+        <div class="profile-display-name" id="profileHeroName">—</div>
+        <div class="profile-display-meta">
+          <span class="profile-gender-badge" id="profileGenderBadge" style="display:none"></span>
+          <span class="profile-display-course" id="profileHeroCourse"></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Form card -->
+    <div class="card">
+      <h4 class="card-title"><i class="fa-solid fa-sliders"></i> Personal Information</h4>
+      <div class="profile-form">
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-id-badge"></i> Title</label>
+          <div class="profile-title-toggle" id="profileTitleToggle">
+            <button class="profile-title-btn active" data-title="Mr" onclick="selectTitle('Mr')">Mr</button>
+            <button class="profile-title-btn" data-title="Ms" onclick="selectTitle('Ms')">Ms</button>
+          </div>
+        </div>
+
+        <div class="profile-form-row">
+          <div class="form-group">
+            <label><i class="fa-solid fa-user"></i> Full Name *</label>
+            <input type="text" id="profileFullName" placeholder="e.g. Arjun Sharma" maxlength="80" oninput="syncDisplayName()"/>
+          </div>
+          <div class="form-group">
+            <label><i class="fa-solid fa-at"></i> Display Name</label>
+            <input type="text" id="profileDisplayName" placeholder="e.g. Arjun" maxlength="40"/>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-cake-candles"></i> Date of Birth</label>
+          <input type="date" id="profileDOB" onchange="renderProfileHero()"/>
+          <div class="profile-dob-info" id="profileDobInfo" style="display:none">
+            <i class="fa-solid fa-star"></i> <span id="profileDobInfoText"></span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label><i class="fa-solid fa-graduation-cap"></i> Course / Class Pursuing</label>
+          <input type="text" id="profileCourse" placeholder="e.g. B.Tech Computer Science, Grade 12" maxlength="100"/>
+        </div>
+
+      </div>
+      <div class="profile-form-footer">
+        <button class="btn-outline" onclick="clearProfile()"><i class="fa-solid fa-rotate-left"></i> Clear</button>
+        <button class="btn-primary" onclick="saveProfile()"><i class="fa-solid fa-floppy-disk"></i> Save Profile</button>
+      </div>
+    </div>
+
+    <!-- Quick stats card -->
+    <div class="card profile-stats-card" id="profileStatsCard" style="display:none">
+      <h4 class="card-title"><i class="fa-solid fa-chart-pie"></i> At a Glance</h4>
+      <div class="profile-stats-grid">
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="pStatAge">—</div>
+          <div class="profile-stat-label">Age</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="pStatExams">—</div>
+          <div class="profile-stat-label">Total Exams</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="pStatStreak">—</div>
+          <div class="profile-stat-label">Day Streak</div>
+        </div>
+        <div class="profile-stat">
+          <div class="profile-stat-value" id="pStatDone">—</div>
+          <div class="profile-stat-label">Completed</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════
+     NOTEPAD SECTION
+  ══════════════════════════════════════════════════════════ -->
+  <section id="notepad" class="section">
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">Notepad</h1>
+        <p class="section-sub">Rich notes, always saved locally.</p>
+      </div>
+      <button class="btn-primary btn-sm" onclick="NP.openNew()">
+        <i class="fa-solid fa-plus"></i> New Note
+      </button>
+    </div>
+  
+    <div class="np-search-bar">
+      <div class="np-search-wrap">
+        <i class="fa-solid fa-magnifying-glass np-search-icon"></i>
+        <input class="np-search-input" id="npSearch"
+              type="search" placeholder="Search notes…"
+              oninput="NP.renderList()" autocomplete="off" />
+      </div>
+      <div class="np-filter-chips">
+        <button class="np-tag-chip active" data-tag="all"      onclick="NP.filterTag(this)">All</button>
+        <button class="np-tag-chip" data-tag="Study"           onclick="NP.filterTag(this)"><i class="fa-solid fa-book-open"></i> Study</button>
+        <button class="np-tag-chip" data-tag="Revision"        onclick="NP.filterTag(this)"><i class="fa-solid fa-rotate-left"></i> Revision</button>
+        <button class="np-tag-chip" data-tag="Ideas"           onclick="NP.filterTag(this)"><i class="fa-solid fa-lightbulb"></i> Ideas</button>
+        <button class="np-tag-chip" data-tag="Personal"        onclick="NP.filterTag(this)"><i class="fa-solid fa-user"></i> Personal</button>
+        <button class="np-tag-chip" data-tag="Other"           onclick="NP.filterTag(this)"><i class="fa-solid fa-ellipsis"></i> Other</button>
+      </div>
+    </div>
+  
+    <div class="np-grid" id="npGrid"></div>
+    <div class="empty-state" id="npEmpty" style="display:none">
+      <div class="empty-emoji"><i class="fa-solid fa-note-sticky fa-2x"></i></div>
+      <p>No notes yet.<br>Create your first note to get started!</p>
+      <button class="btn-primary btn-sm" onclick="NP.openNew()">
+        <i class="fa-solid fa-plus"></i> New Note
+      </button>
+    </div>
+  </section>
+
+
+  <!-- ========== TIMETABLE SECTION ========== -->
+  <section id="timetable" class="section">
+  
+    <div class="section-header">
+      <div>
+        <h1 class="section-title">Day Planner</h1>
+        <p class="section-sub">Plan your study sessions and tasks with time blocks.</p>
+      </div>
+      <button class="btn-primary btn-sm" onclick="TT.openModal()">
+        <i class="fa-solid fa-plus"></i> Add Block
+      </button>
+    </div>
+  
+    <!-- ── View toggle ── -->
+    <div class="view-toggle" style="margin-bottom:1rem">
+      <button class="view-btn active" id="ttDayViewBtn"  onclick="TT.setView('day')">
+        <i class="fa-solid fa-calendar-day"></i> Day
+      </button>
+      <button class="view-btn" id="ttWeekViewBtn" onclick="TT.setView('week')">
+        <i class="fa-solid fa-calendar-week"></i> Week
+      </button>
+    </div>
+  
+    <!-- ── Day navigator ── -->
+    <div class="tt-day-nav" id="ttDayNav">
+      <button class="cal-nav-btn" onclick="TT.shiftDay(-1)" title="Previous day">
+        <i class="fa-solid fa-chevron-left"></i>
+      </button>
+      <span class="tt-day-label" id="ttDayLabel">Today</span>
+      <button class="cal-nav-btn" onclick="TT.shiftDay(1)" title="Next day">
+        <i class="fa-solid fa-chevron-right"></i>
+      </button>
+      <button class="btn-outline btn-xs" onclick="TT.goToday()" style="margin-left:.5rem">Today</button>
+    </div>
+  
+    <!-- ── Week day-strip (week view) ── -->
+    <div class="tt-week-strip" id="ttWeekStrip" style="display:none">
+      <button class="cal-nav-btn" onclick="TT.shiftWeek(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+      <div class="tt-week-days" id="ttWeekDays"></div>
+      <button class="cal-nav-btn" onclick="TT.shiftWeek(1)"><i class="fa-solid fa-chevron-right"></i></button>
+    </div>
+  
+    <!-- ── Summary pills ── -->
+    <div class="tt-summary-strip" id="ttSummaryStrip">
+      <div class="tt-summary-pill tt-pill-blue">
+        <i class="fa-solid fa-clock"></i>
+        <span id="ttTotalHours">0 h</span> scheduled
+      </div>
+      <div class="tt-summary-pill tt-pill-green">
+        <i class="fa-solid fa-circle-check"></i>
+        <span id="ttDoneCount">0</span> done
+      </div>
+      <div class="tt-summary-pill tt-pill-gold">
+        <i class="fa-solid fa-hourglass-half"></i>
+        <span id="ttPendingCount">0</span> pending
+      </div>
+    </div>
+  
+    <!-- ── Timeline grid ── -->
+    <div class="tt-timeline-wrap">
+      <div class="tt-timeline" id="ttTimeline">
+        <!-- populated by TT.renderTimeline() -->
+      </div>
+    </div>
+  
+    <!-- ── Empty state ── -->
+    <div class="tt-empty" id="ttEmpty" style="display:none">
+      <div class="empty-emoji"><i class="fa-solid fa-calendar-xmark fa-2x"></i></div>
+      <p>No blocks scheduled.<br>Tap <strong>+ Add Block</strong> to plan your day.</p>
+      <button class="btn-primary btn-sm" onclick="TT.openModal()">
+        <i class="fa-solid fa-plus"></i> Add First Block
+      </button>
+    </div>
+  
+  </section><!-- /#timetable -->
+
 </main>
 
 <!-- ========== EXAM MODAL ========== -->
@@ -454,8 +1104,525 @@
   </div>
   <div class="modal-body" id="trackerModalBody"></div>
 </div>
+
+<!-- ========== TO-DO MODAL ========== -->
+<div class="modal-overlay" id="todoModalOverlay" onclick="closeTodoModal()"></div>
+<div class="modal" id="todoModal">
+  <div class="modal-header">
+    <h3 id="todoModalTitle"><i class="fa-solid fa-list-check"></i> Add Task</h3>
+    <button class="modal-close" onclick="closeTodoModal()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="modal-body">
+    <input type="hidden" id="todoEditId"/>
+
+    <div class="form-group">
+      <label><i class="fa-solid fa-pen"></i> Task *</label>
+      <input type="text" id="todoTaskInput" placeholder="e.g. Complete Math assignment" maxlength="120"/>
+    </div>
+
+    <div class="form-group">
+      <label><i class="fa-solid fa-tag"></i> Category</label>
+      <div class="todo-modal-chips" id="todoCatPicker">
+        <button class="todo-chip active" data-val="Exam Prep"      onclick="selectTodoCat(this)"><i class="fa-solid fa-book-open"></i> Exam Prep</button>
+        <button class="todo-chip"        data-val="Assignment"     onclick="selectTodoCat(this)"><i class="fa-solid fa-pen-to-square"></i> Assignment</button>
+        <button class="todo-chip"        data-val="Revision"       onclick="selectTodoCat(this)"><i class="fa-solid fa-rotate-left"></i> Revision</button>
+        <button class="todo-chip"        data-val="Project"        onclick="selectTodoCat(this)"><i class="fa-solid fa-diagram-project"></i> Project</button>
+        <button class="todo-chip"        data-val="School Activity" onclick="selectTodoCat(this)"><i class="fa-solid fa-school"></i> School Activity</button>
+        <button class="todo-chip"        data-val="Personal Study" onclick="selectTodoCat(this)"><i class="fa-solid fa-user-graduate"></i> Personal Study</button>
+        <button class="todo-chip"        data-val="Other"          onclick="selectTodoCat(this)"><i class="fa-solid fa-ellipsis"></i> Other</button>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label><i class="fa-solid fa-arrow-up-wide-short"></i> Priority</label>
+        <div class="todo-modal-chips" id="todoPriPicker">
+          <button class="todo-chip todo-chip-high   active" data-val="High"   onclick="selectTodoPri(this)">High</button>
+          <button class="todo-chip todo-chip-medium"        data-val="Medium" onclick="selectTodoPri(this)">Medium</button>
+          <button class="todo-chip todo-chip-low"           data-val="Low"    onclick="selectTodoPri(this)">Low</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label><i class="fa-solid fa-calendar-day"></i> Due Date <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+        <input type="date" id="todoDueDate"/>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label><i class="fa-solid fa-note-sticky"></i> Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <textarea id="todoNotes" placeholder="Any extra details…" rows="2" maxlength="300"></textarea>
+    </div>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" onclick="closeTodoModal()">Cancel</button>
+    <button class="btn-primary" onclick="saveTodo()"><i class="fa-solid fa-floppy-disk"></i> Save Task</button>
+  </div>
+</div>
+
+<!-- ========== TO-DO DELETE CONFIRM MODAL ========== -->
+<div class="modal-overlay" id="todoDeleteOverlay" onclick="closeTodoDeleteModal()"></div>
+<div class="modal modal-sm" id="todoDeleteModal">
+  <div class="modal-header">
+    <h3><i class="fa-solid fa-trash" style="color:var(--danger)"></i> Delete Task</h3>
+    <button class="modal-close" onclick="closeTodoDeleteModal()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="modal-body" style="padding:1.2rem 1.4rem">
+    <p style="color:var(--text-soft);font-size:0.95rem;line-height:1.6">
+      Are you sure you want to delete<br>
+      <strong id="todoDeleteTaskName" style="color:var(--text)"></strong>?
+    </p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" onclick="closeTodoDeleteModal()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+    <button class="btn-danger"  id="todoDeleteConfirmBtn"><i class="fa-solid fa-trash"></i> Delete</button>
+  </div>
+</div>
+
+<!-- ========== DOCUMENT PREVIEW MODAL ========== -->
+<div class="modal-overlay" id="docPreviewOverlay" onclick="closeDocPreview()"></div>
+<div class="modal modal-doc-preview" id="docPreviewModal">
+  <div class="modal-header">
+    <h3 id="docPreviewTitle"><i class="fa-solid fa-file"></i> Preview</h3>
+    <button class="modal-close" onclick="closeDocPreview()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="modal-body doc-preview-body" id="docPreviewBody">
+    <!-- JS injects either <img> or <iframe> here -->
+  </div>
+</div>
+
+<!-- ========== DOCUMENT DELETE CONFIRM MODAL ========== -->
+<div class="modal-overlay" id="docDeleteOverlay" onclick="closeDeleteDocModal()"></div>
+<div class="modal modal-sm" id="docDeleteModal">
+  <div class="modal-header">
+    <h3><i class="fa-solid fa-trash" style="color:var(--danger)"></i> Delete File</h3>
+    <button class="modal-close" onclick="closeDeleteDocModal()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="modal-body" style="padding: 1.2rem 1.4rem;">
+    <p style="color:var(--text-soft); font-size:0.95rem; line-height:1.6;">
+      Are you sure you want to delete
+      <strong id="docDeleteFileName" style="color:var(--text)"></strong>?
+      <br>This action cannot be undone.
+    </p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" onclick="closeDeleteDocModal()">
+      <i class="fa-solid fa-xmark"></i> Cancel
+    </button>
+    <button class="btn-danger" id="docDeleteConfirmBtn">
+      <i class="fa-solid fa-trash"></i> Delete
+    </button>
+  </div>
+</div>
+
+
+<!-- ========== PROFILE CLEAR CONFIRM MODAL ========== -->
+<div class="modal-overlay" id="profileClearOverlay" onclick="closeProfileClearModal()"></div>
+<div class="modal modal-sm" id="profileClearModal">
+  <div class="modal-header">
+    <h3><i class="fa-solid fa-rotate-left" style="color:var(--danger)"></i> Clear Profile</h3>
+    <button class="modal-close" onclick="closeProfileClearModal()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="modal-body" style="padding: 1.2rem 1.4rem;">
+    <p style="color:var(--text-soft); font-size:0.95rem; line-height:1.6;">
+      Are you sure you want to clear <strong style="color:var(--text)">all profile data</strong>?
+      <br>This action cannot be undone.
+    </p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" onclick="closeProfileClearModal()">
+      <i class="fa-solid fa-xmark"></i> Cancel
+    </button>
+    <button class="btn-danger" onclick="confirmClearProfile()">
+      <i class="fa-solid fa-rotate-left"></i> Clear
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     NOTEPAD - EDITOR MODAL
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="npModalOverlay"></div>
+<div class="modal np-modal" id="npModal" role="dialog" aria-modal="true" aria-label="Note Editor">
+ 
+  <!-- Header -->
+  <div class="np-modal-header">
+    <div class="np-title-row">
+      <input class="np-title-input" id="npTitleInput"
+             type="text" placeholder="Note title…" maxlength="120"
+             oninput="NP.markDirty()" />
+      <select class="np-tag-select" id="npTagSelect" onchange="NP.markDirty()">
+        <option value="Study">Study</option>
+        <option value="Revision">Revision</option>
+        <option value="Ideas">Ideas</option>
+        <option value="Personal">Personal</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    <button class="modal-close" onclick="NP.closeModal()" aria-label="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+ 
+  <!-- Toolbar — each button calls NP.toolbarMousedown(event) to
+       preventDefault so the editor never loses its selection/focus -->
+  <div class="np-toolbar" id="npToolbar">
+ 
+    <div class="np-tool-group">
+      <select class="np-tool-select" id="npBlockType" title="Text style"
+              onmousedown="NP.toolbarMousedown(event)"
+              onchange="NP.applyBlock(this.value)">
+        <option value="p">Paragraph</option>
+        <option value="h1">Heading 1</option>
+        <option value="h2">Heading 2</option>
+        <option value="h3">Heading 3</option>
+      </select>
+    </div>
+ 
+    <div class="np-tool-sep"></div>
+ 
+    <div class="np-tool-group">
+      <button class="np-tool-btn" id="npBoldBtn"      title="Bold (Ctrl+B)"
+              onmousedown="NP.toolbarMousedown(event)" onclick="NP.execFmt('bold')">
+        <i class="fa-solid fa-bold"></i>
+      </button>
+      <button class="np-tool-btn" id="npItalicBtn"    title="Italic (Ctrl+I)"
+              onmousedown="NP.toolbarMousedown(event)" onclick="NP.execFmt('italic')">
+        <i class="fa-solid fa-italic"></i>
+      </button>
+      <button class="np-tool-btn" id="npUnderlineBtn" title="Underline (Ctrl+U)"
+              onmousedown="NP.toolbarMousedown(event)" onclick="NP.execFmt('underline')">
+        <i class="fa-solid fa-underline"></i>
+      </button>
+      <button class="np-tool-btn" id="npStrikeBtn"    title="Strikethrough"
+              onmousedown="NP.toolbarMousedown(event)" onclick="NP.execFmt('strikeThrough')">
+        <i class="fa-solid fa-strikethrough"></i>
+      </button>
+    </div>
+ 
+    <div class="np-tool-sep"></div>
+ 
+    <div class="np-tool-group">
+      <button class="np-tool-btn" title="Bullet list"
+              onmousedown="NP.toolbarMousedown(event)" onclick="NP.execFmt('insertUnorderedList')">
+        <i class="fa-solid fa-list-ul"></i>
+      </button>
+      <button class="np-tool-btn" title="Numbered list"
+              onmousedown="NP.toolbarMousedown(event)" onclick="NP.execFmt('insertOrderedList')">
+        <i class="fa-solid fa-list-ol"></i>
+      </button>
+    </div>
+ 
+    <div class="np-tool-sep"></div>
+ 
+    <!-- Colour swatches (much better than native colour input) -->
+    <div class="np-tool-group np-color-group">
+      <span class="np-color-label"><i class="fa-solid fa-palette"></i></span>
+      <div class="np-color-swatches">
+        <button class="np-swatch np-swatch-default" title="Default colour"
+                onmousedown="NP.toolbarMousedown(event)"
+                onclick="NP.applyColor(null)">A</button>
+        <button class="np-swatch" data-color="#5BA4CF" style="--sw:#5BA4CF"
+                onmousedown="NP.toolbarMousedown(event)"
+                onclick="NP.applyColor('#5BA4CF')"></button>
+        <button class="np-swatch" data-color="#6BBFB5" style="--sw:#6BBFB5"
+                onmousedown="NP.toolbarMousedown(event)"
+                onclick="NP.applyColor('#6BBFB5')"></button>
+        <button class="np-swatch" data-color="#84B89A" style="--sw:#84B89A"
+                onmousedown="NP.toolbarMousedown(event)"
+                onclick="NP.applyColor('#84B89A')"></button>
+        <button class="np-swatch" data-color="#E8A84E" style="--sw:#E8A84E"
+                onmousedown="NP.toolbarMousedown(event)"
+                onclick="NP.applyColor('#E8A84E')"></button>
+        <button class="np-swatch" data-color="#D96B5A" style="--sw:#D96B5A"
+                onmousedown="NP.toolbarMousedown(event)"
+                onclick="NP.applyColor('#D96B5A')"></button>
+        <button class="np-swatch" data-color="#9B8FD4" style="--sw:#9B8FD4"
+                onmousedown="NP.toolbarMousedown(event)"
+                onclick="NP.applyColor('#9B8FD4')"></button>
+        <button class="np-swatch np-swatch-pick" title="Custom colour"
+                onmousedown="NP.toolbarMousedown(event)"
+                onclick="document.getElementById('npColorPicker').click()">
+          <i class="fa-solid fa-ellipsis" style="font-size:0.55rem"></i>
+        </button>
+        <input type="color" id="npColorPicker" class="np-color-hidden"
+               value="#5BA4CF" onchange="NP.applyColor(this.value)" />
+      </div>
+    </div>
+ 
+    <div class="np-tool-sep"></div>
+ 
+    <div class="np-tool-group">
+      <button class="np-tool-btn np-highlight-btn" title="Highlight"
+              onmousedown="NP.toolbarMousedown(event)"
+              onclick="NP.execFmt('hiliteColor','#FFF176')">
+        <i class="fa-solid fa-highlighter"></i>
+      </button>
+      <button class="np-tool-btn" title="Clear formatting"
+              onmousedown="NP.toolbarMousedown(event)"
+              onclick="NP.execFmt('removeFormat')">
+        <i class="fa-solid fa-text-slash"></i>
+      </button>
+    </div>
+ 
+    <div class="np-tool-sep"></div>
+ 
+    <div class="np-tool-group">
+      <button class="np-tool-btn" title="Align left"
+              onmousedown="NP.toolbarMousedown(event)"
+              onclick="NP.execFmt('justifyLeft')">
+        <i class="fa-solid fa-align-left"></i>
+      </button>
+      <button class="np-tool-btn" title="Align centre"
+              onmousedown="NP.toolbarMousedown(event)"
+              onclick="NP.execFmt('justifyCenter')">
+        <i class="fa-solid fa-align-center"></i>
+      </button>
+      <button class="np-tool-btn" title="Align right"
+              onmousedown="NP.toolbarMousedown(event)"
+              onclick="NP.execFmt('justifyRight')">
+        <i class="fa-solid fa-align-right"></i>
+      </button>
+    </div>
+ 
+  </div><!-- /.np-toolbar -->
+ 
+  <!-- Editor area -->
+  <div class="np-editor-wrap">
+    <div class="np-editor" id="npEditor"
+         contenteditable="true"
+         spellcheck="true"
+         data-placeholder="Start writing your note…"
+         oninput="NP.onEditorInput()"
+         onkeydown="NP.onEditorKeydown(event)"
+         onmouseup="NP.refreshToolbar()"
+         onkeyup="NP.refreshToolbar()"
+         onfocus="NP.refreshToolbar()">
+    </div>
+  </div>
+ 
+  <!-- Footer -->
+  <div class="np-modal-footer">
+    <div class="np-footer-meta">
+      <span class="np-word-count" id="npWordCount">0 words</span>
+      <span class="np-save-indicator" id="npSaveIndicator">
+        <i class="fa-solid fa-circle-check"></i> Saved
+      </span>
+    </div>
+    <div class="np-footer-btns">
+      <button class="btn-outline" onclick="NP.closeModal()">
+        <i class="fa-solid fa-xmark"></i> Close
+      </button>
+      <button class="btn-primary" onclick="NP.saveNote()">
+        <i class="fa-solid fa-floppy-disk"></i> Save
+      </button>
+    </div>
+  </div>
+ 
+</div><!-- /#npModal -->
+ 
+ 
+<!-- ══════════════════════════════════════════════════════════
+     DELETE CONFIRM MODAL  (paste after </main>)
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="npDeleteOverlay"></div>
+<div class="modal modal-sm" id="npDeleteModal">
+  <div class="modal-header">
+    <h3><i class="fa-solid fa-trash" style="color:var(--danger)"></i> Delete Note</h3>
+    <button class="modal-close" onclick="NP.closeDeleteModal()">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+  <div class="modal-body" style="padding:1.2rem 1.4rem">
+    <p style="color:var(--text-soft);font-size:0.95rem;line-height:1.6">
+      Are you sure you want to delete<br>
+      <strong id="npDeleteTitle" style="color:var(--text)"></strong>?<br>
+      This cannot be undone.
+    </p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" onclick="NP.closeDeleteModal()">
+      <i class="fa-solid fa-xmark"></i> Cancel
+    </button>
+    <button class="btn-danger" id="npDeleteConfirmBtn">
+      <i class="fa-solid fa-trash"></i> Delete
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════
+     ADD / EDIT TIMETABLE BLOCK MODAL
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="ttModalOverlay" onclick="TT.closeModal()"></div>
+<div class="modal" id="ttModal" role="dialog" aria-modal="true" aria-labelledby="ttModalTitle">
+ 
+  <div class="modal-header">
+    <h3 id="ttModalTitle"><i class="fa-solid fa-calendar-plus" style="color:var(--accent)"></i> Add Time Block</h3>
+    <button class="modal-close" onclick="TT.closeModal()" aria-label="Close">
+      <i class="fa-solid fa-xmark"></i>
+    </button>
+  </div>
+ 
+  <div class="modal-body" style="padding:1.2rem 1.4rem;display:flex;flex-direction:column;gap:1rem">
+ 
+    <!-- Subject / Task -->
+    <div class="form-group">
+      <label class="form-label"><i class="fa-solid fa-book-open"></i> Subject / Task <span class="req">*</span></label>
+      <input type="text" id="ttSubject" class="form-input" placeholder="e.g. Maths — Calculus revision"
+             maxlength="80" oninput="TT.liveValidate()" />
+      <span class="form-hint" id="ttSubjectErr" style="display:none;color:var(--danger);font-size:.8rem">Required</span>
+    </div>
+ 
+    <!-- Category & Color row -->
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label class="form-label"><i class="fa-solid fa-tag"></i> Category</label>
+        <select id="ttCategory" class="form-input">
+          <option value="Study">Study</option>
+          <option value="Revision">Revision</option>
+          <option value="Assignment">Assignment</option>
+          <option value="Project">Project</option>
+          <option value="Practice">Practice</option>
+          <option value="Break">Break</option>
+          <option value="Personal">Personal</option>
+          <option value="Other">Other</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:0 0 auto">
+        <label class="form-label"><i class="fa-solid fa-palette"></i> Colour</label>
+        <div class="tt-color-row" id="ttColorRow">
+          <button class="tt-color-swatch active" data-color="#5BA4CF" style="--sc:#5BA4CF" onclick="TT.pickColor('#5BA4CF',this)"></button>
+          <button class="tt-color-swatch" data-color="#6BBFB5" style="--sc:#6BBFB5" onclick="TT.pickColor('#6BBFB5',this)"></button>
+          <button class="tt-color-swatch" data-color="#84B89A" style="--sc:#84B89A" onclick="TT.pickColor('#84B89A',this)"></button>
+          <button class="tt-color-swatch" data-color="#E8A84E" style="--sc:#E8A84E" onclick="TT.pickColor('#E8A84E',this)"></button>
+          <button class="tt-color-swatch" data-color="#D96B5A" style="--sc:#D96B5A" onclick="TT.pickColor('#D96B5A',this)"></button>
+          <button class="tt-color-swatch" data-color="#9B8FD4" style="--sc:#9B8FD4" onclick="TT.pickColor('#9B8FD4',this)"></button>
+        </div>
+        <input type="hidden" id="ttColor" value="#5BA4CF" />
+      </div>
+    </div>
+ 
+    <!-- Date -->
+    <div class="form-group">
+      <label class="form-label"><i class="fa-solid fa-calendar-days"></i> Date <span class="req">*</span></label>
+      <input type="date" id="ttDate" class="form-input" oninput="TT.liveValidate()" />
+    </div>
+ 
+    <!-- Time range -->
+    <div class="form-row">
+      <div class="form-group" style="flex:1">
+        <label class="form-label"><i class="fa-regular fa-clock"></i> Start Time <span class="req">*</span></label>
+        <input type="time" id="ttStart" class="form-input" oninput="TT.liveValidate()" />
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label"><i class="fa-solid fa-clock"></i> End Time <span class="req">*</span></label>
+        <input type="time" id="ttEnd" class="form-input" oninput="TT.liveValidate()" />
+      </div>
+    </div>
+    <span class="form-hint" id="ttTimeErr" style="display:none;color:var(--danger);font-size:.8rem">End time must be after start time.</span>
+ 
+    <!-- Reminder -->
+    <div class="form-row" style="align-items:center;gap:.75rem">
+      <div class="form-group" style="flex:1">
+        <label class="form-label"><i class="fa-solid fa-bell"></i> Reminder</label>
+        <select id="ttReminder" class="form-input">
+          <option value="0">No reminder</option>
+          <option value="5">5 min before</option>
+          <option value="10" selected>10 min before</option>
+          <option value="15">15 min before</option>
+          <option value="30">30 min before</option>
+          <option value="60">1 hr before</option>
+        </select>
+      </div>
+      <div class="form-group" style="flex:1">
+        <label class="form-label"><i class="fa-solid fa-volume-high"></i> Sound</label>
+        <select id="ttSound" class="form-input">
+          <option value="chime">Chime</option>
+          <option value="bell">Bell</option>
+          <option value="ping">Ping</option>
+          <option value="none">None</option>
+        </select>
+      </div>
+    </div>
+ 
+    <!-- Notes -->
+    <div class="form-group">
+      <label class="form-label"><i class="fa-solid fa-note-sticky"></i> Notes <span style="color:var(--text-muted);font-weight:400">(optional)</span></label>
+      <textarea id="ttNotes" class="form-input" rows="2" placeholder="Any extra details…" maxlength="300"
+                style="resize:vertical;min-height:60px;font-family:var(--font-body)"></textarea>
+    </div>
+ 
+    <!-- Repeat -->
+    <div class="form-group">
+      <label class="form-label"><i class="fa-solid fa-rotate"></i> Repeat</label>
+      <select id="ttRepeat" class="form-input">
+        <option value="none">No repeat</option>
+        <option value="daily">Daily</option>
+        <option value="weekdays">Weekdays (Mon–Fri)</option>
+        <option value="weekly">Weekly (same day)</option>
+      </select>
+    </div>
+ 
+  </div><!-- /.modal-body -->
+ 
+  <div class="modal-footer">
+    <button class="btn-outline" onclick="TT.closeModal()">
+      <i class="fa-solid fa-xmark"></i> Cancel
+    </button>
+    <button class="btn-primary" id="ttSaveBtn" onclick="TT.saveBlock()">
+      <i class="fa-solid fa-floppy-disk"></i> Save Block
+    </button>
+  </div>
+ 
+</div><!-- /#ttModal -->
+ 
+ 
+<!-- ══════════════════════════════════════════════════════════
+     DELETE CONFIRM MODAL
+══════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" id="ttDeleteOverlay"></div>
+<div class="modal modal-sm" id="ttDeleteModal">
+  <div class="modal-header">
+    <h3><i class="fa-solid fa-trash" style="color:var(--danger)"></i> Delete Block</h3>
+    <button class="modal-close" onclick="TT.closeDeleteModal()"><i class="fa-solid fa-xmark"></i></button>
+  </div>
+  <div class="modal-body" style="padding:1.2rem 1.4rem">
+    <p style="color:var(--text-soft);font-size:.95rem;line-height:1.6">
+      Delete <strong id="ttDeleteTitle" style="color:var(--text)"></strong>?<br>
+      This cannot be undone.
+    </p>
+  </div>
+  <div class="modal-footer">
+    <button class="btn-outline" onclick="TT.closeDeleteModal()"><i class="fa-solid fa-xmark"></i> Cancel</button>
+    <button class="btn-danger" id="ttDeleteConfirmBtn"><i class="fa-solid fa-trash"></i> Delete</button>
+  </div>
+</div>
+
 <script src="notifications.js" defer></script>
-<script src="script.js"></script>
+<script src="script.js" defer></script>
+<script src="notepad.js" defer></script>
+<script src="timetable.js" defer></script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(async reg => {
+          console.log('[SW] Registered:', reg.scope);
+          ExamiaNotifications.init(reg);
+
+          if ('periodicSync' in reg) {
+            try {
+              await reg.periodicSync.register('examia-daily-check', { minInterval: 60 * 60 * 1000 });
+              await reg.periodicSync.register('examia-alarms',      { minInterval:  5 * 60 * 1000 });
+              console.log('[SW] Periodic sync registered');
+            } catch (e) {
+              console.info('[SW] Periodic sync not granted:', e.message);
+            }
+          }
+        })
+        .catch(err => console.error('[SW] Registration failed:', err));
+    }
+  });
+</script>
 <script>
   if ('serviceWorker' in navigator) {
     window.addEventListener('load', () => {

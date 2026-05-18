@@ -1,12 +1,18 @@
 {
-  "id": "/",
-
+  "id": "dev.workers.navahue.examia.twa",
+  "host": "examia.navahue.workers.dev",
+  
   "name": "Examia — Ace Your Exams",
+  "launcherName": "Examia",
   "short_name": "Examia",
+  "version": "2.0.5",
+  "appVersionName": "2.0.5",
+  "appVersionCode": 2,
 
   "description": "Examia is an offline exam planning and Pomodoro study companion designed to help students organise exams, track study progress, manage schedules, and stay focused.",
 
   "start_url": "/index.html?source=pwa",
+  "startUrl": "/index.html?source=pwa",
   "scope": "/",
 
   "scope_extensions": [
@@ -44,6 +50,7 @@
   },
 
   "handle_links": "preferred",
+  "capture_links": "existing-client-navigate",
 
   "edge_side_panel": {
     "preferred_width": 420
@@ -55,6 +62,29 @@
 
   "iarc_rating_id": "e84b072d-71b3-4d3e-86ae-31a8ce4e53b7",
 
+    "permissions_policy": {
+    "notifications": ["self"],
+    "microphone": [],
+    "camera": []
+  },
+
+  "enableNotifications": true,
+  "isChromeOSOnly": false,
+  "isMetaQuest": false,
+  "fullScopeUrl": "https://examia.navahue.workers.dev/",
+
+  "serviceworker": {
+    "src": "service-worker.js",
+    
+    "scope": "/",
+    "update_via_cache": "none"
+  },
+
+  "serviceWorker": {
+    "file": "service-worker.js",
+    "version": "v5"
+  },
+
   "icons": [
     { "src": "icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any" },
     { "src": "icon-96.png",  "sizes": "96x96",   "type": "image/png", "purpose": "any" },
@@ -64,6 +94,7 @@
     { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
     { "src": "icon-384.png", "sizes": "384x384", "type": "image/png", "purpose": "any" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "monochrome" },
     { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
   ],
 
@@ -73,6 +104,7 @@
       "sizes": "1080x1920",
       "type": "image/png",
       "form_factor": "narrow",
+      "platform": "android",
       "label": "Examia — Dashboard overview on mobile"
     },
     {
@@ -80,18 +112,12 @@
       "sizes": "1920x1080",
       "type": "image/png",
       "form_factor": "wide",
+      "platform": "windows",
       "label": "Examia — Dashboard overview on desktop"
     }
   ],
 
   "shortcuts": [
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Overview of your exams, study progress, and upcoming sessions",
-      "url": "/index.html#dashboard",
-      "icons": [{ "src": "icon-dashboard.png", "sizes": "192x192", "type": "image/png" }]
-    },
     {
       "name": "Exam Planner",
       "short_name": "Planner",
@@ -107,7 +133,7 @@
       "icons": [{ "src": "icon-tracker.png", "sizes": "192x192", "type": "image/png" }]
     },
     {
-      "name": "Pomodoro Timer",
+      "name": "Pomodoro",
       "short_name": "Pomodoro",
       "description": "Start a focused Pomodoro session",
       "url": "/index.html#pomodoro",
@@ -119,12 +145,55 @@
       "description": "Get a motivational quote to keep going",
       "url": "/index.html#motivation",
       "icons": [{ "src": "icon-motivation.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "To-Do List",
+      "short_name": "To-Do",
+      "description": "Manage your daily tasks and responsibilities",
+      "url": "/index.html#todo",
+      "icons": [{ "src": "icon-todo.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "TakeCare",
+      "short_name": "TakeCare",
+      "description": "Log your daily wellness vibe",
+      "url": "/index.html#takecare",
+      "icons": [{ "src": "icon-takecare.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Documents",
+      "short_name": "Documents",
+      "description": "Access and manage your important documents",
+      "url": "/index.html#documents",
+      "icons": [{ "src": "icon-documents.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Notepad",
+      "short_name": "Notepad",
+      "description": "Create and manage your notes",
+      "url": "/index.html#notepad",
+      "icons": [{ "src": "icon-notepad.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Day Planner",
+      "short_name": "Day Planner",
+      "description": "Plan and view your daily planner timetable",
+      "url": "/index.html#timetable",
+      "icons": [{ "src": "icon-dayplanner.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Profile",
+      "short_name": "Profile",
+      "description": "View and edit your profile information",
+      "url": "/index.html#profile",
+      "icons": [{ "src": "icon-profile.png", "sizes": "192x192", "type": "image/png" }]
     }
   ],
 
   "share_target": {
     "action": "/index.html",
     "method": "GET",
+    "enctype": "application/x-www-form-urlencoded",
     "params": {
       "title": "title",
       "text": "text",
@@ -155,6 +224,20 @@
       "url": "https://examia.navahue.workers.dev/manifest.json"
     }
   ],
+
+  "signingMode": "new",
+  "signing": {
+    "file": null,
+    "alias": "examia",
+    "fullName": "Examia",
+    "organization": "NavaHue",
+    "organizationalUnit": "Development",
+    "countryCode": "IN",
+    "keyPassword": "YOUR_KEY_PASSWORD",
+    "storePassword": "YOUR_STORE_PASSWORD"
+  },
+
+  "fallbackType": "customtabs",
 
   "widgets": [
     {
